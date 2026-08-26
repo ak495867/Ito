@@ -99,7 +99,9 @@ jobs:
       - name: Install OCaml dependencies
         run: opam install dune yojson --yes
       - name: Run complete Ito pipeline
-        run: bash scripts/build_all.sh
+        run: |
+          eval "$(opam env)"
+          bash scripts/build_all.sh
       - name: Upload readiness and benchmark evidence
         if: always()
         uses: actions/upload-artifact@v4
