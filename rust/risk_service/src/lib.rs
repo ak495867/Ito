@@ -89,8 +89,16 @@ pub fn evaluate(request: RiskRequest) -> RiskResponse {
     let bytes = serde_json::to_vec(&request).unwrap_or_default();
     let mut hasher = Sha256::new();
     hasher.update(bytes);
-    let request_digest = hasher.finalize().iter().map(|byte| format!("{byte:02x}")).collect();
-    RiskResponse { decision, reason_code, request_digest }
+    let request_digest = hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    RiskResponse {
+        decision,
+        reason_code,
+        request_digest,
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -106,9 +114,22 @@ pub struct FpgaRiskFrame {
 }
 
 pub fn to_fpga_frame(request: RiskRequest) -> FpgaRiskFrame {
-    let control = (request.trading_enabled as u8) | ((request.halted as u8) << 1) | ((matches!(request.side, Side::Buy) as u8) << 2);
-    let health = (request.limits_valid as u8) | ((request.clock_healthy as u8) << 1) | ((request.feed_healthy as u8) << 2);
-    FpgaRiskFrame { price_ticks: request.price_ticks, quantity: request.quantity, max_quantity: request.max_quantity, max_notional_ticks: request.max_notional_ticks, net_position: request.net_position, max_net_position: request.max_net_position, control, health }
+    let control = (request.trading_enabled as u8)
+        | ((request.halted as u8) << 1)
+        | ((matches!(request.side, Side::Buy) as u8) << 2);
+    let health = (request.limits_valid as u8)
+        | ((request.clock_healthy as u8) << 1)
+        | ((request.feed_healthy as u8) << 2);
+    FpgaRiskFrame {
+        price_ticks: request.price_ticks,
+        quantity: request.quantity,
+        max_quantity: request.max_quantity,
+        max_notional_ticks: request.max_notional_ticks,
+        net_position: request.net_position,
+        max_net_position: request.max_net_position,
+        control,
+        health,
+    }
 }
 
 #[cfg(test)]
@@ -116,7 +137,20 @@ mod tests {
     use super::*;
 
     fn request() -> RiskRequest {
-        RiskRequest { price_ticks: 100, quantity: 10, max_quantity: 100, max_notional_ticks: 10_000, net_position: 0, max_net_position: 1_000, side: Side::Buy, trading_enabled: true, limits_valid: true, clock_healthy: true, feed_healthy: true, halted: false }
+        RiskRequest {
+            price_ticks: 100,
+            quantity: 10,
+            max_quantity: 100,
+            max_notional_ticks: 10_000,
+            net_position: 0,
+            max_net_position: 1_000,
+            side: Side::Buy,
+            trading_enabled: true,
+            limits_valid: true,
+            clock_healthy: true,
+            feed_healthy: true,
+            halted: false,
+        }
     }
 
     #[test]

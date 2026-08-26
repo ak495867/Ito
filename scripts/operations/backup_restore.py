@@ -38,23 +38,44 @@ def safe_relative(value: str) -> Path:
 
 
 def relative_path(root: Path, path: Path) -> str:
-    root_name = os.path.abspath(os.fspath(root))
-    path_name = os.path.abspath(os.fspath(path))
-    relative = os.path.relpath(path_name, root_name)
-    if os.path.isabs(relative) or relative == os.pardir or relative.startswith(os.pardir + os.sep):
-        raise BackupError(f"outside_root:{path_name}")
-    return Path(relative).as_posix()
+    try:
+        relative = path.relative_to(root)
+    except ValueError:
+        root_name = os.path.normcase(os.path.realpath(os.path.abspath(os.fspath(root))))
+        path_name = os.path.normcase(os.path.realpath(os.path.abspath(os.fspath(path))))
+        relative = Path(os.path.relpath(path_name, root_name))
+    if relative.is_absolute() or relative == Path(os.pardir) or relative.parts[:1] == (os.pardir,):
+        raise BackupError(f"outside_root:{path}")
+    return relative.as_posix()
+
+
+def ensure_within_root(root: Path, path: Path) -> None:
+    resolved_root = root.resolve()
+    resolved_path = path.resolve()
+    current = resolved_path
+    try:
+        while True:
+            if os.path.samefile(current, resolved_root):
+                return
+            parent = current.parent
+            if parent == current:
+                break
+            current = parent
+    except OSError:
+        pass
+    raise BackupError(f"outside_root:{path}")
 
 
 def collect(root: Path, requested: list[str]) -> list[Path]:
     files: set[Path] = set()
     for value in requested or list(DEFAULT_PATHS):
         relative = safe_relative(value)
-        candidate = (root / relative).resolve()
-        if root.resolve() not in candidate.parents and candidate != root.resolve():
-            raise BackupError(f"outside_root:{value}")
+        candidate = root / relative
         if not candidate.exists():
             raise BackupError(f"missing_path:{value}")
+        ensure_within_root(root, candidate)
+        if candidate.is_symlink():
+            raise BackupError(f"unsupported_source:{value}")
         if candidate.is_file():
             files.add(candidate)
         else:

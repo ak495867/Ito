@@ -46,14 +46,27 @@ pub enum AuthorizationFailure {
     RateExceeded,
 }
 
-pub fn authorize(permission: &VenuePermission, lease: &SessionLease, branch_id: u64, entity_id: u64, live: bool, owner_id: &str, now_ns: u64, messages_per_second: u64) -> Result<(), AuthorizationFailure> {
+pub fn authorize(
+    permission: &VenuePermission,
+    lease: &SessionLease,
+    branch_id: u64,
+    entity_id: u64,
+    live: bool,
+    owner_id: &str,
+    now_ns: u64,
+    messages_per_second: u64,
+) -> Result<(), AuthorizationFailure> {
     if !permission.allowed {
         return Err(AuthorizationFailure::VenueNotAllowed);
     }
     if permission.branch_id != branch_id || lease.branch_id != branch_id {
         return Err(AuthorizationFailure::BranchMismatch);
     }
-    if permission.venue_id != lease.venue_id || permission.venue_id == 0 || permission.broker_id == 0 || lease.epoch == 0 {
+    if permission.venue_id != lease.venue_id
+        || permission.venue_id == 0
+        || permission.broker_id == 0
+        || lease.epoch == 0
+    {
         return Err(AuthorizationFailure::VenueNotAllowed);
     }
     if permission.entity_id != entity_id {
@@ -81,7 +94,11 @@ pub fn lease_digest(lease: &SessionLease) -> String {
     let bytes = serde_json::to_vec(lease).unwrap_or_default();
     let mut hasher = Sha256::new();
     hasher.update(bytes);
-    hasher.finalize().iter().map(|byte| format!("{byte:02x}")).collect()
+    hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 #[cfg(test)]
@@ -89,11 +106,26 @@ mod tests {
     use super::*;
 
     fn permission() -> VenuePermission {
-        VenuePermission { venue_id: 5, broker_id: 8, branch_id: 11, entity_id: 21, allowed: true, live_enabled: false, max_messages_per_second: 100 }
+        VenuePermission {
+            venue_id: 5,
+            broker_id: 8,
+            branch_id: 11,
+            entity_id: 21,
+            allowed: true,
+            live_enabled: false,
+            max_messages_per_second: 100,
+        }
     }
 
     fn lease() -> SessionLease {
-        SessionLease { venue_id: 5, branch_id: 11, epoch: 4, owner_id: "node-a".to_owned(), expires_at_ns: 1000, state: SessionState::Ready }
+        SessionLease {
+            venue_id: 5,
+            branch_id: 11,
+            epoch: 4,
+            owner_id: "node-a".to_owned(),
+            expires_at_ns: 1000,
+            state: SessionState::Ready,
+        }
     }
 
     #[test]
@@ -103,13 +135,19 @@ mod tests {
 
     #[test]
     fn rejects_expired_lease() {
-        assert_eq!(authorize(&permission(), &lease(), 11, 21, false, "node-a", 1000, 10), Err(AuthorizationFailure::LeaseExpired));
+        assert_eq!(
+            authorize(&permission(), &lease(), 11, 21, false, "node-a", 1000, 10),
+            Err(AuthorizationFailure::LeaseExpired)
+        );
     }
 
     #[test]
     fn rejects_venue_mismatch() {
         let mut value = lease();
         value.venue_id = 6;
-        assert_eq!(authorize(&permission(), &value, 11, 21, false, "node-a", 500, 10), Err(AuthorizationFailure::VenueNotAllowed));
+        assert_eq!(
+            authorize(&permission(), &value, 11, 21, false, "node-a", 500, 10),
+            Err(AuthorizationFailure::VenueNotAllowed)
+        );
     }
 }

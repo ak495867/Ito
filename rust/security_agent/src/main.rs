@@ -16,9 +16,19 @@ fn digest(path: &str, expected: Option<&str>) -> Result<ArtifactReport, String> 
     let mut hasher = Sha256::new();
     hasher.update(&data);
     let hash = hasher.finalize();
-    let value = hash.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
-    let verified = expected.map(|digest| digest.eq_ignore_ascii_case(&value)).unwrap_or(false);
-    Ok(ArtifactReport { path: path.to_owned(), sha256: value, bytes: data.len() as u64, verified })
+    let value = hash
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let verified = expected
+        .map(|digest| digest.eq_ignore_ascii_case(&value))
+        .unwrap_or(false);
+    Ok(ArtifactReport {
+        path: path.to_owned(),
+        sha256: value,
+        bytes: data.len() as u64,
+        verified,
+    })
 }
 
 fn main() {
@@ -38,7 +48,10 @@ fn main() {
     }
     match digest(&path, expected.as_deref()) {
         Ok(report) => {
-            println!("{}", serde_json::to_string(&report).unwrap_or_else(|_| "{}".to_owned()));
+            println!(
+                "{}",
+                serde_json::to_string(&report).unwrap_or_else(|_| "{}".to_owned())
+            );
             if expected.is_some() && !report.verified {
                 std::process::exit(1);
             }

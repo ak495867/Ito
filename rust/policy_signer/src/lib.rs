@@ -12,7 +12,11 @@ pub struct ReleaseBinding {
 pub fn digest_bytes(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
-    hasher.finalize().iter().map(|byte| format!("{byte:02x}")).collect()
+    hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 pub fn digest_json<T: Serialize>(value: &T) -> String {
@@ -25,7 +29,10 @@ fn valid_digest(value: &str) -> bool {
 }
 
 pub fn verify_binding(binding: &ReleaseBinding) -> bool {
-    binding.policy_version > 0 && valid_digest(&binding.artifact_digest) && valid_digest(&binding.rtl_digest) && valid_digest(&binding.schema_digest)
+    binding.policy_version > 0
+        && valid_digest(&binding.artifact_digest)
+        && valid_digest(&binding.rtl_digest)
+        && valid_digest(&binding.schema_digest)
 }
 
 #[cfg(test)]
@@ -40,9 +47,19 @@ mod tests {
 
     #[test]
     fn verifies_release_binding_shape() {
-        let binding = ReleaseBinding { policy_version: 2, artifact_digest: "a".repeat(64), rtl_digest: "b".repeat(64), schema_digest: "c".repeat(64) };
+        let binding = ReleaseBinding {
+            policy_version: 2,
+            artifact_digest: "a".repeat(64),
+            rtl_digest: "b".repeat(64),
+            schema_digest: "c".repeat(64),
+        };
         assert!(verify_binding(&binding));
-        let invalid = ReleaseBinding { policy_version: 2, artifact_digest: "g".repeat(64), rtl_digest: "b".repeat(64), schema_digest: "c".repeat(64) };
+        let invalid = ReleaseBinding {
+            policy_version: 2,
+            artifact_digest: "g".repeat(64),
+            rtl_digest: "b".repeat(64),
+            schema_digest: "c".repeat(64),
+        };
         assert!(!verify_binding(&invalid));
     }
 }

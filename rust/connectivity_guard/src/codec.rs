@@ -35,22 +35,57 @@ pub enum CodecError {
 }
 
 impl WireFrame {
-    pub fn new(version: u16, message_type: u16, flags: u16, branch_id: u64, entity_id: u64, venue_id: u16, session_epoch: u64, sequence: u64, expires_at_ns: u64, payload: Vec<u8>) -> Result<Self, CodecError> {
+    pub fn new(
+        version: u16,
+        message_type: u16,
+        flags: u16,
+        branch_id: u64,
+        entity_id: u64,
+        venue_id: u16,
+        session_epoch: u64,
+        sequence: u64,
+        expires_at_ns: u64,
+        payload: Vec<u8>,
+    ) -> Result<Self, CodecError> {
         if payload.len() > MAX_PAYLOAD {
             return Err(CodecError::PayloadTooLarge);
         }
-        if branch_id == 0 || entity_id == 0 || venue_id == 0 || session_epoch == 0 || sequence == 0 || expires_at_ns == 0 {
+        if branch_id == 0
+            || entity_id == 0
+            || venue_id == 0
+            || session_epoch == 0
+            || sequence == 0
+            || expires_at_ns == 0
+        {
             return Err(CodecError::InvalidScope);
         }
         let payload_hash = hash_payload(&payload);
-        Ok(Self { version, message_type, flags, branch_id, entity_id, venue_id, session_epoch, sequence, expires_at_ns, payload_hash, payload })
+        Ok(Self {
+            version,
+            message_type,
+            flags,
+            branch_id,
+            entity_id,
+            venue_id,
+            session_epoch,
+            sequence,
+            expires_at_ns,
+            payload_hash,
+            payload,
+        })
     }
 
     pub fn encode(&self) -> Result<Vec<u8>, CodecError> {
         if self.version != SUPPORTED_VERSION {
             return Err(CodecError::UnsupportedVersion);
         }
-        if self.branch_id == 0 || self.entity_id == 0 || self.venue_id == 0 || self.session_epoch == 0 || self.sequence == 0 || self.expires_at_ns == 0 {
+        if self.branch_id == 0
+            || self.entity_id == 0
+            || self.venue_id == 0
+            || self.session_epoch == 0
+            || self.sequence == 0
+            || self.expires_at_ns == 0
+        {
             return Err(CodecError::InvalidScope);
         }
         if self.payload.len() > MAX_PAYLOAD {
@@ -77,31 +112,67 @@ impl WireFrame {
         Ok(bytes)
     }
 
-    pub fn decode(bytes: &[u8], now_ns: u64, expected_branch_id: u64, expected_entity_id: u64, last_sequence: u64) -> Result<Self, CodecError> {
+    pub fn decode(
+        bytes: &[u8],
+        now_ns: u64,
+        expected_branch_id: u64,
+        expected_entity_id: u64,
+        last_sequence: u64,
+    ) -> Result<Self, CodecError> {
         if bytes.len() < HEADER_BYTES {
             return Err(CodecError::Truncated);
         }
         if u16::from_le_bytes(bytes[0..2].try_into().map_err(|_| CodecError::Truncated)?) != MAGIC {
             return Err(CodecError::InvalidMagic);
         }
-        let version = u16::from_le_bytes(bytes[2..4].try_into().map_err(|_| CodecError::Truncated)?);
+        let version =
+            u16::from_le_bytes(bytes[2..4].try_into().map_err(|_| CodecError::Truncated)?);
         if version != SUPPORTED_VERSION {
             return Err(CodecError::UnsupportedVersion);
         }
-        let branch_id = u64::from_le_bytes(bytes[8..16].try_into().map_err(|_| CodecError::Truncated)?);
-        let entity_id = u64::from_le_bytes(bytes[16..24].try_into().map_err(|_| CodecError::Truncated)?);
-        let venue_id = u16::from_le_bytes(bytes[24..26].try_into().map_err(|_| CodecError::Truncated)?);
-        let session_epoch = u64::from_le_bytes(bytes[28..36].try_into().map_err(|_| CodecError::Truncated)?);
-        let sequence = u64::from_le_bytes(bytes[36..44].try_into().map_err(|_| CodecError::Truncated)?);
-        let expires_at_ns = u64::from_le_bytes(bytes[44..52].try_into().map_err(|_| CodecError::Truncated)?);
-        let payload_length = u32::from_le_bytes(bytes[52..56].try_into().map_err(|_| CodecError::Truncated)?) as usize;
+        let branch_id =
+            u64::from_le_bytes(bytes[8..16].try_into().map_err(|_| CodecError::Truncated)?);
+        let entity_id = u64::from_le_bytes(
+            bytes[16..24]
+                .try_into()
+                .map_err(|_| CodecError::Truncated)?,
+        );
+        let venue_id = u16::from_le_bytes(
+            bytes[24..26]
+                .try_into()
+                .map_err(|_| CodecError::Truncated)?,
+        );
+        let session_epoch = u64::from_le_bytes(
+            bytes[28..36]
+                .try_into()
+                .map_err(|_| CodecError::Truncated)?,
+        );
+        let sequence = u64::from_le_bytes(
+            bytes[36..44]
+                .try_into()
+                .map_err(|_| CodecError::Truncated)?,
+        );
+        let expires_at_ns = u64::from_le_bytes(
+            bytes[44..52]
+                .try_into()
+                .map_err(|_| CodecError::Truncated)?,
+        );
+        let payload_length = u32::from_le_bytes(
+            bytes[52..56]
+                .try_into()
+                .map_err(|_| CodecError::Truncated)?,
+        ) as usize;
         if payload_length > MAX_PAYLOAD {
             return Err(CodecError::PayloadTooLarge);
         }
         if bytes.len() != HEADER_BYTES + payload_length {
             return Err(CodecError::InvalidLength);
         }
-        if branch_id != expected_branch_id || entity_id != expected_entity_id || venue_id == 0 || session_epoch == 0 {
+        if branch_id != expected_branch_id
+            || entity_id != expected_entity_id
+            || venue_id == 0
+            || session_epoch == 0
+        {
             return Err(CodecError::InvalidScope);
         }
         if last_sequence == u64::MAX || sequence != last_sequence + 1 {
@@ -116,7 +187,21 @@ impl WireFrame {
         if payload_hash != hash_payload(&payload) {
             return Err(CodecError::InvalidPayloadHash);
         }
-        Ok(Self { version, message_type: u16::from_le_bytes(bytes[4..6].try_into().map_err(|_| CodecError::Truncated)?), flags: u16::from_le_bytes(bytes[6..8].try_into().map_err(|_| CodecError::Truncated)?), branch_id, entity_id, venue_id, session_epoch, sequence, expires_at_ns, payload_hash, payload })
+        Ok(Self {
+            version,
+            message_type: u16::from_le_bytes(
+                bytes[4..6].try_into().map_err(|_| CodecError::Truncated)?,
+            ),
+            flags: u16::from_le_bytes(bytes[6..8].try_into().map_err(|_| CodecError::Truncated)?),
+            branch_id,
+            entity_id,
+            venue_id,
+            session_epoch,
+            sequence,
+            expires_at_ns,
+            payload_hash,
+            payload,
+        })
     }
 }
 
@@ -133,19 +218,28 @@ mod tests {
     #[test]
     fn round_trips_frame() {
         let frame = WireFrame::new(1, 32, 0, 11, 21, 5, 4, 9, 2_000, b"order".to_vec()).unwrap();
-        assert_eq!(WireFrame::decode(&frame.encode().unwrap(), 1_000, 11, 21, 8).unwrap(), frame);
+        assert_eq!(
+            WireFrame::decode(&frame.encode().unwrap(), 1_000, 11, 21, 8).unwrap(),
+            frame
+        );
     }
 
     #[test]
     fn rejects_scope_mismatch() {
         let frame = WireFrame::new(1, 32, 0, 11, 21, 5, 4, 9, 2_000, b"order".to_vec()).unwrap();
-        assert_eq!(WireFrame::decode(&frame.encode().unwrap(), 1_000, 12, 21, 8), Err(CodecError::InvalidScope));
+        assert_eq!(
+            WireFrame::decode(&frame.encode().unwrap(), 1_000, 12, 21, 8),
+            Err(CodecError::InvalidScope)
+        );
     }
 
     #[test]
     fn rejects_expired_frame() {
         let frame = WireFrame::new(1, 32, 0, 11, 21, 5, 4, 9, 1_000, b"order".to_vec()).unwrap();
-        assert_eq!(WireFrame::decode(&frame.encode().unwrap(), 1_000, 11, 21, 8), Err(CodecError::InvalidExpiry));
+        assert_eq!(
+            WireFrame::decode(&frame.encode().unwrap(), 1_000, 11, 21, 8),
+            Err(CodecError::InvalidExpiry)
+        );
     }
 
     #[test]
