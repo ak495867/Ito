@@ -89,6 +89,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install Python build dependencies
+        run: python -m pip install matplotlib
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Set up OCaml
