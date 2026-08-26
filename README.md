@@ -2,6 +2,15 @@
 
 > *"A safe trading system is not defined by how quickly it can send an order, but by how deliberately it refuses to send one when its evidence is incomplete."*
 
+[![CI](https://github.com/ak495867/Ito/actions/workflows/ci.yml/badge.svg?branch=main )](https://github.com/ak495867/Ito/actions/workflows/ci.yml )
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg )](https://github.com/ak495867/Ito/blob/main/LICENSE.md )
+[![Status](https://img.shields.io/badge/status-not__production__ready-orange.svg )](https://github.com/ak495867/Ito#production-readiness-what-remains )
+[![Live Trading](https://img.shields.io/badge/live%20trading-disabled-success.svg )](https://github.com/ak495867/Ito#deployment-boundaries )
+[![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C.svg?logo=cplusplus&logoColor=white )](https://isocpp.org/ )
+[![Rust 2021](https://img.shields.io/badge/Rust-2021-000000.svg?logo=rust&logoColor=white )](https://www.rust-lang.org/ )
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg?logo=python&logoColor=white )](https://www.python.org/ )
+
+
 ## The Concept
 
 Ever wanted to explore a multi-branch trading-system architecture without turning every control into an implicit assumption? **Ito** is a local-first engineering foundation for deterministic trading simulation, policy validation, controlled connectivity, hardware-oriented risk gating, replay, reconciliation, and operational-readiness testing.
