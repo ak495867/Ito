@@ -37,6 +37,15 @@ def safe_relative(value: str) -> Path:
     return path
 
 
+def relative_path(root: Path, path: Path) -> str:
+    root_name = os.path.abspath(os.fspath(root))
+    path_name = os.path.abspath(os.fspath(path))
+    relative = os.path.relpath(path_name, root_name)
+    if os.path.isabs(relative) or relative == os.pardir or relative.startswith(os.pardir + os.sep):
+        raise BackupError(f"outside_root:{path_name}")
+    return Path(relative).as_posix()
+
+
 def collect(root: Path, requested: list[str]) -> list[Path]:
     files: set[Path] = set()
     for value in requested or list(DEFAULT_PATHS):
@@ -56,7 +65,7 @@ def collect(root: Path, requested: list[str]) -> list[Path]:
 def manifest(root: Path, files: list[Path]) -> dict[str, object]:
     entries = []
     for path in files:
-        relative = path.relative_to(root).as_posix()
+        relative = relative_path(root, path)
         entries.append({"path": relative, "size": path.stat().st_size, "sha256": digest(path)})
     return {"format": 1, "root": root.name, "files": entries}
 
@@ -74,7 +83,7 @@ def backup(root: Path, output: Path, requested: list[str]) -> None:
             info.size = len(payload)
             archive.addfile(info, __import__("io").BytesIO(payload))
             for path in files:
-                archive.add(path, arcname=path.relative_to(root).as_posix(), recursive=False)
+                archive.add(path, arcname=relative_path(root, path), recursive=False)
         os.replace(temporary_name, output)
     finally:
         if os.path.exists(temporary_name):
