@@ -1,0 +1,59 @@
+{
+  "policy_version": 2,
+  "policy_name": "ito-default-risk-policy",
+  "expires_at_ns": 4102444800000000000,
+  "trading_enabled": false,
+  "scope": {
+    "branch_ids": [11, 12],
+    "entity_ids": [21, 22],
+    "strategy_ids": [7],
+    "venue_ids": [5]
+  },
+  "pre_trade": {
+    "max_order_quantity": 100,
+    "max_order_notional_ticks": 1000000,
+    "max_net_position": 1000,
+    "max_gross_position": 2000,
+    "max_orders_per_second": 10,
+    "max_cancel_replace_per_second": 20,
+    "max_open_orders": 100,
+    "max_price_deviation_ticks": 500,
+    "allow_market_orders": false,
+    "allow_short_sales": false,
+    "require_reason_code": true,
+    "require_valid_market_data": true,
+    "require_healthy_clock": true,
+    "require_durable_journal": true
+  },
+  "intraday": {
+    "max_strategy_loss_ticks": 250000,
+    "max_branch_loss_ticks": 1000000,
+    "max_entity_loss_ticks": 2500000,
+    "max_gross_notional_ticks": 10000000,
+    "max_concentration_ticks": 3000000,
+    "stale_position_age_ms": 1000,
+    "stale_limit_age_ms": 5000,
+    "breach_action": "halt_scope"
+  },
+  "liquidity": {
+    "max_participation_bps": 1000,
+    "min_displayed_depth_ticks": 100,
+    "max_spread_ticks": 50,
+    "stale_book_age_ms": 250,
+    "halt_on_crossed_book": true
+  },
+  "operational": {
+    "max_clock_offset_ns": 1000,
+    "max_journal_lag_ms": 10,
+    "max_policy_age_ms": 5000,
+    "max_feed_gap_count": 0,
+    "max_recovery_age_ms": 5000,
+    "fail_closed": true
+  },
+  "approval": {
+    "required_roles": ["risk_manager", "operations_manager"],
+    "dual_control_for_limit_widening": true,
+    "dual_control_for_live_activation": true,
+    "review_interval_hours": 24
+  }
+}

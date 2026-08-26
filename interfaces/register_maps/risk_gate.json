@@ -1,0 +1,17 @@
+{
+  "register_map_version": 2,
+  "block": "pre_trade_gate",
+  "frame_bytes": 64,
+  "frame_bits": 512,
+  "registers": [
+    {"name": "PRICE_TICKS", "offset": 0, "bytes": 8, "access": "rw", "fields": ["value"]},
+    {"name": "QUANTITY", "offset": 8, "bytes": 8, "access": "rw", "fields": ["value"]},
+    {"name": "MAX_QUANTITY", "offset": 16, "bytes": 8, "access": "rw", "fields": ["value"]},
+    {"name": "MAX_NOTIONAL_TICKS", "offset": 24, "bytes": 8, "access": "rw", "fields": ["value"]},
+    {"name": "NET_POSITION", "offset": 32, "bytes": 8, "access": "rw", "fields": ["value"]},
+    {"name": "MAX_NET_POSITION", "offset": 40, "bytes": 8, "access": "rw", "fields": ["value"]},
+    {"name": "CONTROL", "offset": 48, "bytes": 1, "access": "rw", "fields": ["trading_enabled", "halted", "side_buy"]},
+    {"name": "HEALTH", "offset": 49, "bytes": 1, "access": "rw", "fields": ["clock_healthy", "feed_healthy", "limits_valid"]},
+    {"name": "LIMITS_VERSION", "offset": 56, "bytes": 8, "access": "rw", "fields": ["version"]}
+  ]
+}

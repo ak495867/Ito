@@ -1,0 +1,10 @@
+(executable
+ (name policy_engine)
+ (modules policy_engine)
+ (flags (:standard -w @A-4-29-40-41-42-44-45-48-58)))
+
+(executable
+ (name risk_policy_validator)
+ (modules risk_policy_validator)
+ (libraries yojson unix)
+ (flags (:standard -w @A-4-29-40-41-42-44-45-48-58)))

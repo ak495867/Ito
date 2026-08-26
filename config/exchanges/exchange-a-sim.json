@@ -1,0 +1,16 @@
+{
+  "venue_id": 5,
+  "broker_id": 8,
+  "name": "exchange-a-sim",
+  "kind": "exchange",
+  "protocol": "simulator",
+  "region": "us",
+  "endpoint": "127.0.0.1:9105",
+  "enabled": true,
+  "live_enabled": false,
+  "tls_required": true,
+  "heartbeat_ms": 1000,
+  "max_messages_per_second": 100000,
+  "session_mode": "initiator",
+  "certification_state": "simulator_only"
+}

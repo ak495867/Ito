@@ -1,0 +1,59 @@
+name: ito-production
+
+services:
+  branch-gateway:
+    image: ${ITO_IMAGE:?ITO_IMAGE must be provided}
+    command: ["/opt/ito/bin/ito_branch_gateway"]
+    environment:
+      ITO_BRANCH_ID: ${ITO_BRANCH_ID:?ITO_BRANCH_ID must be provided}
+      ITO_ENTITY_ID: ${ITO_ENTITY_ID:?ITO_ENTITY_ID must be provided}
+      ITO_MODE: ${ITO_MODE:-restricted}
+      ITO_RELEASE_ID: ${ITO_RELEASE_ID:?ITO_RELEASE_ID must be provided}
+    secrets:
+      - ito_client_certificate
+      - ito_client_key
+      - ito_root_ca
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+    volumes:
+      - ito_state:/var/lib/ito
+      - ito_logs:/var/log/ito
+    healthcheck:
+      test: ["CMD", "/opt/ito/bin/ito_operations_agent", "--healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  risk-service:
+    image: ${ITO_IMAGE:?ITO_IMAGE must be provided}
+    command: ["/opt/ito/bin/ito-risk-service"]
+    environment:
+      ITO_BRANCH_ID: ${ITO_BRANCH_ID:?ITO_BRANCH_ID must be provided}
+      ITO_ENTITY_ID: ${ITO_ENTITY_ID:?ITO_ENTITY_ID must be provided}
+      ITO_MODE: ${ITO_MODE:-restricted}
+      ITO_RELEASE_ID: ${ITO_RELEASE_ID:?ITO_RELEASE_ID must be provided}
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+    volumes:
+      - ito_state:/var/lib/ito
+      - ito_logs:/var/log/ito
+    restart: unless-stopped
+
+secrets:
+  ito_client_certificate:
+    external: true
+  ito_client_key:
+    external: true
+  ito_root_ca:
+    external: true
+
+volumes:
+  ito_state:
+  ito_logs:

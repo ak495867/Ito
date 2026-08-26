@@ -1,0 +1,14 @@
+build/
+ocaml/_build/
+rust/target/
+__pycache__/
+*.pyc
+*.swp
+.env
+.venv/
+_target/
+*.o
+*.a
+*.so
+*.vcd
+*.fst

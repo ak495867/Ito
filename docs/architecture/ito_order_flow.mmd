@@ -1,0 +1,36 @@
+sequenceDiagram
+    participant S as Strategy Runtime
+    participant R as Branch Risk Gate
+    participant F as FPGA Edge
+    participant A as Venue Adapter
+    participant V as Exchange Simulator
+    participant J as Event Journal
+    participant P as Portfolio Service
+    participant O as Operations
+
+    S->>R: ORDER_INTENT(correlation_id, policy_version, market_sequence)
+    R->>R: Validate branch, identity, limits, health, rate
+    R->>J: RISK_DECISION(approved or rejected, reason)
+    alt Rejected
+        R-->>S: RISK_DECISION(REJECTED)
+    else Approved
+        R->>F: Approved execution token
+        F->>F: Verify token and active limit snapshot
+        F->>J: ORDER_NEW(submission sequence)
+        F->>A: ORDER_NEW(client_order_id)
+        A->>V: Venue-native new order
+        V-->>A: ACK or REJECT(venue_order_id)
+        A-->>F: ORDER_ACK
+        F->>J: ORDER_ACK
+        V-->>A: FILL(execution_id)
+        A-->>P: FILL
+        A->>J: FILL
+        P->>J: POSITION_UPDATE
+    end
+
+    O->>R: HALT(scope, reason)
+    R->>F: HALT
+    F->>A: CANCEL_ALL
+    A->>V: Venue-native cancels
+    V-->>A: CANCEL_ACK
+    A->>J: HALT and CANCEL evidence

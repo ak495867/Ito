@@ -1,0 +1,11 @@
+{
+  "policy_version": 1,
+  "expires_at_ns": 4102444800000000000,
+  "trading_enabled": false,
+  "max_order_quantity": 100,
+  "max_order_notional_ticks": 1000000,
+  "max_net_position": 1000,
+  "max_gross_position": 2000,
+  "max_orders_per_second": 10,
+  "max_cancel_replace_per_second": 20
+}

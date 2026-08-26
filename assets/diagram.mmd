@@ -1,0 +1,49 @@
+flowchart LR
+    User["Strategy or Operator Input"] --> Policy["Policy and Configuration\nOCaml validators\nRisk limits and circuit breakers"]
+    Policy --> Intent["Validated Order Intent\nVersioned JSON schema"]
+
+    Intent --> Risk["Native Risk and Execution\nC++ risk engine\nOrder state machine\nFill accounting"]
+    Risk --> Lease["Session and Lease Controls\nScope\nAuthorization\nLease fencing\nSession readiness"]
+    Lease --> Router["Smart Order Router\nPrice bounds\nRoute authorization\nSafe fallback"]
+
+    Router --> Sim["Exchange Simulator\nPrice-time matching\nPartial fills\nCancels\nEvent reports"]
+    Router --> Network["Controlled Network Adapter\nmTLS\nPending correlations\nUncertain-result handling"]
+    Network --> Venue["External Venue Boundary\nLive-disabled by default\nVenue certification required"]
+
+    Risk --> Frame["Generated Risk Frame\nRegister-map v2\nExplicit offsets"]
+    Frame --> FPGA["SystemVerilog Controls\nPre-trade gate\nRisk accelerator\nSequencer\nBackpressure\nKill switch"]
+    FPGA --> Decision["Hardware Risk Decision"]
+    Decision --> Risk
+
+    Sim --> Journal["Journal and Durable State\nSequence continuity\nSQLite WAL\nSnapshots\nReconciliation"]
+    Network --> Journal
+    Risk --> Journal
+
+    Journal --> Portfolio["Portfolio and P&L\nNet and gross exposure\nRealized and unrealized P&L\nConcentration and limits"]
+    Journal --> Replay["Replay and Backtest\nChronology\nDuplicate detection\nRecovery validation"]
+    Journal --> Recovery["Backup and Restore\nManifest hashes\nAtomic restore\nByte comparison"]
+
+    Security["Security and Release\nConnectivity guard\nArtifact verifier\nPolicy signer\nSBOM and provenance\nKey-rotation drill"] --> Release["Release Binding\nPolicy SHA-256\nRTL SHA-256\nSchema SHA-256"]
+    Release --> Intent
+
+    Health["Operations and Observability\nHealth JSON\nPrometheus metrics\nIncident lifecycle\nRunbooks"] --> Readiness["Readiness Matrix\nLocal evidence\nExternal gates"]
+    Portfolio --> Health
+    Recovery --> Health
+    Journal --> Health
+
+    Readiness --> Local["Local Status\nHealthy when checks pass"]
+    Readiness --> Production["Production Status\nNOT_PRODUCTION_READY"]
+
+    Production --> Blockers["External Production Gates\nHSM/KMS custody\nVenue certification\nLive credentials\nFPGA timing and HIL\nPaging and incident integration\nIndependent governance approval"]
+
+    classDef runtime fill:#e8f1ff,stroke:#2563eb,stroke-width:1px,color:#0f172a;
+    classDef control fill:#ecfdf5,stroke:#059669,stroke-width:1px,color:#0f172a;
+    classDef evidence fill:#fff7ed,stroke:#ea580c,stroke-width:1px,color:#0f172a;
+    classDef external fill:#fef2f2,stroke:#dc2626,stroke-width:1px,color:#0f172a;
+    classDef status fill:#f5f3ff,stroke:#7c3aed,stroke-width:1px,color:#0f172a;
+
+    class User,Intent,Risk,Router,Sim,Network,Venue runtime;
+    class Policy,Lease,Frame,FPGA,Decision,Security,Release control;
+    class Journal,Portfolio,Replay,Recovery,Health,Readiness evidence;
+    class Blockers external;
+    class Local,Production status;

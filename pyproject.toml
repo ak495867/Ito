@@ -1,0 +1,9 @@
+[project]
+name = "ito-tools"
+version = "0.1.0"
+description = "Ito replay, operations, and backtest utilities"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]

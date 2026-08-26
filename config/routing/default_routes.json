@@ -1,0 +1,44 @@
+{
+  "routing_version": 1,
+  "branch_id": 11,
+  "entity_id": 21,
+  "default_policy": "ranked_best_execution",
+  "allow_broker_fallback": true,
+  "max_fee_bps": 100,
+  "max_price_deviation_ticks": 500,
+  "routes": [
+    {
+      "venue_id": 5,
+      "broker_id": 8,
+      "venue_name": "exchange-a-sim",
+      "protocol": "simulator",
+      "rank": 1,
+      "enabled": true,
+      "live_enabled": false,
+      "max_order_quantity": 100,
+      "max_messages_per_second": 100000,
+      "fee_bps": 2,
+      "failover_group": "us-primary"
+    },
+    {
+      "venue_id": 6,
+      "broker_id": 9,
+      "venue_name": "exchange-b-sim",
+      "protocol": "binary",
+      "rank": 2,
+      "enabled": true,
+      "live_enabled": false,
+      "max_order_quantity": 100,
+      "max_messages_per_second": 150000,
+      "fee_bps": 3,
+      "failover_group": "eu-secondary"
+    }
+  ],
+  "failover": {
+    "require_session_lease": true,
+    "require_reconciliation_before_retry": true,
+    "max_ambiguous_orders": 0,
+    "fence_previous_owner": true,
+    "manual_clear_required": true
+  }
+}

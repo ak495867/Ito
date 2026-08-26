@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "controls": [
+    {"id": "ORD-001", "name": "risk_decision_required", "enforcement": "cpp_and_rtl", "failure_mode": "reject"},
+    {"id": "ORD-002", "name": "valid_limit_snapshot_required", "enforcement": "cpp_and_rtl", "failure_mode": "reject"},
+    {"id": "ORD-003", "name": "clock_health_required", "enforcement": "rtl", "failure_mode": "reject"},
+    {"id": "ORD-004", "name": "feed_health_required", "enforcement": "rtl", "failure_mode": "reject"},
+    {"id": "ORD-005", "name": "ambiguous_order_no_retry", "enforcement": "cpp", "failure_mode": "uncertain"},
+    {"id": "REL-001", "name": "artifact_digest_required", "enforcement": "rust", "failure_mode": "deny"},
+    {"id": "REL-002", "name": "policy_validation_required", "enforcement": "ocaml", "failure_mode": "deny"},
+    {"id": "OPS-001", "name": "journal_health_required", "enforcement": "cpp", "failure_mode": "restrict"}
+  ]
+}

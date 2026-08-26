@@ -1,0 +1,88 @@
+flowchart TB
+    subgraph GROUP[Group Control Domain]
+        IAM[Identity and machine trust]
+        KMS[Key management and signing]
+        POLICY[Policy and limit registry]
+        RELEASE[Release and artifact registry]
+        CONSOL[Consolidated risk and exposure]
+        EVIDENCE[Evidence index and archive]
+        OPS[Group operations and incident control]
+    end
+
+    subgraph BRANCH_A[Branch A Execution Domain]
+        A_GATE[Branch protocol gateway]
+        A_CTRL[Branch control plane]
+        A_RISK[Local risk snapshot]
+        A_JOURNAL[Local event journal]
+        A_FPGA[FPGA venue edge]
+        A_HOST[C++ execution host]
+        A_STRAT[Strategy runtime]
+        A_OPS[Branch operations agent]
+        A_STORE[Branch evidence buffer]
+    end
+
+    subgraph BRANCH_B[Branch B Execution Domain]
+        B_GATE[Branch protocol gateway]
+        B_CTRL[Branch control plane]
+        B_RISK[Local risk snapshot]
+        B_JOURNAL[Local event journal]
+        B_FPGA[FPGA venue edge]
+        B_HOST[C++ execution host]
+        B_STRAT[Strategy runtime]
+        B_OPS[Branch operations agent]
+        B_STORE[Branch evidence buffer]
+    end
+
+    subgraph VENUES[Venue and Broker Domain]
+        V_MARKET[Market data feeds]
+        V_ORDER[Order entry sessions]
+        V_ACK[Execution acknowledgements and fills]
+        V_STATUS[Venue status and recovery]
+    end
+
+    IAM --> POLICY
+    KMS --> POLICY
+    KMS --> RELEASE
+    POLICY --> A_GATE
+    POLICY --> B_GATE
+    RELEASE --> A_GATE
+    RELEASE --> B_GATE
+    CONSOL --> POLICY
+    A_GATE <-->|mTLS signed control frames| GROUP
+    B_GATE <-->|mTLS signed control frames| GROUP
+    A_GATE <--> A_CTRL
+    B_GATE <--> B_CTRL
+    A_CTRL --> A_RISK
+    B_CTRL --> B_RISK
+    A_CTRL --> A_JOURNAL
+    B_CTRL --> B_JOURNAL
+    A_FPGA --> A_HOST
+    B_FPGA --> B_HOST
+    A_HOST --> A_STRAT
+    B_HOST --> B_STRAT
+    A_STRAT --> A_RISK
+    B_STRAT --> B_RISK
+    A_RISK --> A_FPGA
+    B_RISK --> B_FPGA
+    A_FPGA --> A_JOURNAL
+    B_FPGA --> B_JOURNAL
+    A_JOURNAL --> A_STORE
+    B_JOURNAL --> B_STORE
+    A_OPS --> A_CTRL
+    B_OPS --> B_CTRL
+    A_STORE --> EVIDENCE
+    B_STORE --> EVIDENCE
+    A_JOURNAL --> CONSOL
+    B_JOURNAL --> CONSOL
+    V_MARKET --> A_FPGA
+    V_MARKET --> B_FPGA
+    A_FPGA --> V_ORDER
+    B_FPGA --> V_ORDER
+    V_ACK --> A_FPGA
+    V_ACK --> B_FPGA
+    V_STATUS --> A_GATE
+    V_STATUS --> B_GATE
+    OPS --> A_GATE
+    OPS --> B_GATE
+    A_GATE -. emergency halt .-> B_GATE
+    B_GATE -. emergency halt .-> A_GATE

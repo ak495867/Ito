@@ -1,0 +1,12 @@
+pub const REGISTER_MAP_VERSION: u64 = 2;
+pub const FRAME_BYTES: usize = 64;
+pub const FRAME_BITS: usize = 512;
+pub const OFFSET_PRICE_TICKS: usize = 0;
+pub const OFFSET_QUANTITY: usize = 8;
+pub const OFFSET_MAX_QUANTITY: usize = 16;
+pub const OFFSET_MAX_NOTIONAL_TICKS: usize = 24;
+pub const OFFSET_NET_POSITION: usize = 32;
+pub const OFFSET_MAX_NET_POSITION: usize = 40;
+pub const OFFSET_CONTROL: usize = 48;
+pub const OFFSET_HEALTH: usize = 49;
+pub const OFFSET_LIMITS_VERSION: usize = 56;

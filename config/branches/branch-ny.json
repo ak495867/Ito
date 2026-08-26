@@ -1,0 +1,13 @@
+{
+  "branch_id": 11,
+  "branch_name": "branch-ny",
+  "entity_id": 21,
+  "mode": "restricted",
+  "region": "us-east",
+  "policy_version": 1,
+  "policy_expires_ns": 4102444800000000000,
+  "live_trading_enabled": false,
+  "venue_ids": [5],
+  "strategy_ids": [7],
+  "journal_path": "/var/lib/ito/branch-ny/events.jsonl"
+}

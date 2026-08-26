@@ -1,0 +1,22 @@
+[Unit]
+Description=Ito Execution Host
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ito
+Group=ito
+WorkingDirectory=/opt/ito
+ExecStart=/opt/ito/build/cpp/ito_execution_host
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ito /var/log/ito
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target

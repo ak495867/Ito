@@ -1,0 +1,115 @@
+name: ito-branch
+
+services:
+  branch-gateway:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+    image: ito:local
+    command: ["/opt/ito/bin/ito_branch_gateway"]
+    environment:
+      ITO_BRANCH_ID: ${ITO_BRANCH_ID:-11}
+      ITO_ENTITY_ID: ${ITO_ENTITY_ID:-21}
+      ITO_MODE: ${ITO_MODE:-restricted}
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ito_state:/var/lib/ito
+    networks:
+      - ito_control
+    restart: unless-stopped
+
+  risk-engine:
+    image: ito:local
+    command: ["/opt/ito/bin/ito_risk_engine"]
+    environment:
+      ITO_BRANCH_ID: ${ITO_BRANCH_ID:-11}
+      ITO_ENTITY_ID: ${ITO_ENTITY_ID:-21}
+      ITO_MODE: ${ITO_MODE:-restricted}
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ito_state:/var/lib/ito
+    networks:
+      - ito_control
+    restart: unless-stopped
+
+  execution-host:
+    image: ito:local
+    command: ["/opt/ito/bin/ito_execution_host"]
+    environment:
+      ITO_BRANCH_ID: ${ITO_BRANCH_ID:-11}
+      ITO_ENTITY_ID: ${ITO_ENTITY_ID:-21}
+      ITO_MODE: ${ITO_MODE:-restricted}
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ito_state:/var/lib/ito
+    networks:
+      - ito_execution
+      - ito_control
+    restart: unless-stopped
+
+  risk-service:
+    image: ito:local
+    command: ["/opt/ito/bin/ito-risk-service"]
+    environment:
+      ITO_BRANCH_ID: ${ITO_BRANCH_ID:-11}
+      ITO_ENTITY_ID: ${ITO_ENTITY_ID:-21}
+      ITO_MODE: ${ITO_MODE:-restricted}
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ito_state:/var/lib/ito
+    networks:
+      - ito_control
+      - ito_execution
+    restart: unless-stopped
+
+  operations-agent:
+    image: ito:local
+    command: ["/opt/ito/bin/ito_operations_agent"]
+    environment:
+      ITO_BRANCH_ID: ${ITO_BRANCH_ID:-11}
+      ITO_ENTITY_ID: ${ITO_ENTITY_ID:-21}
+      ITO_MODE: ${ITO_MODE:-restricted}
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ito_state:/var/lib/ito
+      - ito_logs:/var/log/ito
+    networks:
+      - ito_control
+    restart: unless-stopped
+
+  exchange-simulator:
+    image: ito:local
+    command: ["/opt/ito/bin/ito_exchange_simulator"]
+    profiles: [simulation]
+    environment:
+      ITO_MODE: simulation
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ito_state:/var/lib/ito
+    networks:
+      - ito_simulation
+    restart: "no"
+
+volumes:
+  ito_state:
+  ito_logs:
+
+networks:
+  ito_control:
+    internal: true
+  ito_execution:
+    internal: true
+  ito_simulation:
+    internal: true

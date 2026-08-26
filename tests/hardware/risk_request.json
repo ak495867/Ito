@@ -1,0 +1,14 @@
+{
+  "price_ticks": 100,
+  "quantity": 10,
+  "max_quantity": 100,
+  "max_notional_ticks": 10000,
+  "net_position": 0,
+  "max_net_position": 1000,
+  "side": "Buy",
+  "trading_enabled": true,
+  "limits_valid": true,
+  "clock_healthy": true,
+  "feed_healthy": true,
+  "halted": false
+}

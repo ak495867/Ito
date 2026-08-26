@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "adapters": [
+    {
+      "adapter_id": "exchange-a-sim",
+      "kind": "exchange",
+      "venue_id": 5,
+      "broker_id": 8,
+      "protocol": "simulator",
+      "market_data": true,
+      "order_entry": true,
+      "cancel_replace": true,
+      "recovery": true,
+      "live_enabled": false
+    },
+    {
+      "adapter_id": "exchange-b-sim",
+      "kind": "exchange",
+      "venue_id": 6,
+      "broker_id": 9,
+      "protocol": "binary",
+      "market_data": true,
+      "order_entry": true,
+      "cancel_replace": true,
+      "recovery": true,
+      "live_enabled": false
+    },
+    {
+      "adapter_id": "broker-b-sim",
+      "kind": "broker",
+      "venue_id": 7,
+      "broker_id": 9,
+      "protocol": "fix",
+      "market_data": false,
+      "order_entry": true,
+      "cancel_replace": true,
+      "recovery": true,
+      "live_enabled": false
+    }
+  ],
+  "language_ownership": {
+    "cpp": ["session", "adapter", "routing", "reconciliation"],
+    "rust": ["connectivity_guard", "policy_binding", "frame_codec"],
+    "ocaml": ["policy_validation", "circuit_breaker_validation"],
+    "systemverilog": ["venue_selection", "risk_gate", "rate_limit", "kill_switch"],
+    "python": ["configuration_lint", "operations", "reconciliation", "benchmark"]
+  }
+}

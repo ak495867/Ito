@@ -1,0 +1,16 @@
+{
+  "venue_id": 6,
+  "broker_id": 9,
+  "name": "exchange-b-sim",
+  "kind": "exchange",
+  "protocol": "binary",
+  "region": "eu",
+  "endpoint": "127.0.0.1:9106",
+  "enabled": true,
+  "live_enabled": false,
+  "tls_required": true,
+  "heartbeat_ms": 750,
+  "max_messages_per_second": 150000,
+  "session_mode": "initiator",
+  "certification_state": "simulator_only"
+}

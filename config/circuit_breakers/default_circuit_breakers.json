@@ -1,0 +1,114 @@
+{
+  "policy_version": 2,
+  "policy_name": "ito-default-circuit-breakers",
+  "expires_at_ns": 4102444800000000000,
+  "enabled": true,
+  "defaults": {
+    "cooldown_ms": 30000,
+    "manual_clear_required": true,
+    "preserve_cancel_capacity": true,
+    "journal_required": true,
+    "notification_severity": "critical"
+  },
+  "breakers": [
+    {
+      "id": "CB-FEED-001",
+      "scope": "venue",
+      "trigger": "feed_gap",
+      "threshold": 1,
+      "window_ms": 1,
+      "action": "restrict_new_orders",
+      "recovery": "sequence_recovery_and_operator_ack"
+    },
+    {
+      "id": "CB-FEED-002",
+      "scope": "strategy",
+      "trigger": "stale_market_data_ms",
+      "threshold": 250,
+      "window_ms": 250,
+      "action": "halt_strategy",
+      "recovery": "fresh_feed_and_strategy_restart"
+    },
+    {
+      "id": "CB-CLOCK-001",
+      "scope": "branch",
+      "trigger": "clock_offset_ns",
+      "threshold": 1000,
+      "window_ms": 1000,
+      "action": "halt_new_orders",
+      "recovery": "clock_resynchronization_and_risk_ack"
+    },
+    {
+      "id": "CB-RISK-001",
+      "scope": "strategy",
+      "trigger": "strategy_loss_ticks",
+      "threshold": 250000,
+      "window_ms": 86400000,
+      "action": "halt_strategy",
+      "recovery": "risk_review_and_manual_clear"
+    },
+    {
+      "id": "CB-RISK-002",
+      "scope": "branch",
+      "trigger": "branch_loss_ticks",
+      "threshold": 1000000,
+      "window_ms": 86400000,
+      "action": "halt_branch",
+      "recovery": "risk_committee_review_and_manual_clear"
+    },
+    {
+      "id": "CB-RATE-001",
+      "scope": "strategy",
+      "trigger": "orders_per_second",
+      "threshold": 10,
+      "window_ms": 1000,
+      "action": "throttle_strategy",
+      "recovery": "cooldown_and_rate_revalidation"
+    },
+    {
+      "id": "CB-RATE-002",
+      "scope": "venue",
+      "trigger": "reject_rate_bps",
+      "threshold": 500,
+      "window_ms": 1000,
+      "action": "restrict_venue",
+      "recovery": "venue_health_check_and_operator_ack"
+    },
+    {
+      "id": "CB-ORDER-001",
+      "scope": "branch",
+      "trigger": "ambiguous_order_count",
+      "threshold": 1,
+      "window_ms": 1000,
+      "action": "halt_gateway",
+      "recovery": "venue_reconciliation_and_fencing_check"
+    },
+    {
+      "id": "CB-JOURNAL-001",
+      "scope": "branch",
+      "trigger": "journal_lag_ms",
+      "threshold": 10,
+      "window_ms": 1000,
+      "action": "halt_new_orders",
+      "recovery": "durability_restored_and_evidence_check"
+    },
+    {
+      "id": "CB-SEC-001",
+      "scope": "group",
+      "trigger": "artifact_verification_failure",
+      "threshold": 1,
+      "window_ms": 60000,
+      "action": "halt_release_and_isolate_node",
+      "recovery": "security_incident_review"
+    },
+    {
+      "id": "CB-OPS-001",
+      "scope": "branch",
+      "trigger": "policy_expired",
+      "threshold": 1,
+      "window_ms": 1000,
+      "action": "halt_new_orders",
+      "recovery": "signed_policy_activation"
+    }
+  ]
+}

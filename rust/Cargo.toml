@@ -1,0 +1,3 @@
+[workspace]
+members = ["security_agent", "artifact_verifier", "risk_service", "connectivity_guard", "policy_signer"]
+resolver = "2"

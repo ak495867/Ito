@@ -1,0 +1,92 @@
+{
+  "frame_bits": 512,
+  "frame_bytes": 64,
+  "register_map_version": 2,
+  "registers": [
+    {
+      "access": "rw",
+      "bytes": 8,
+      "fields": [
+        "value"
+      ],
+      "name": "PRICE_TICKS",
+      "offset": 0
+    },
+    {
+      "access": "rw",
+      "bytes": 8,
+      "fields": [
+        "value"
+      ],
+      "name": "QUANTITY",
+      "offset": 8
+    },
+    {
+      "access": "rw",
+      "bytes": 8,
+      "fields": [
+        "value"
+      ],
+      "name": "MAX_QUANTITY",
+      "offset": 16
+    },
+    {
+      "access": "rw",
+      "bytes": 8,
+      "fields": [
+        "value"
+      ],
+      "name": "MAX_NOTIONAL_TICKS",
+      "offset": 24
+    },
+    {
+      "access": "rw",
+      "bytes": 8,
+      "fields": [
+        "value"
+      ],
+      "name": "NET_POSITION",
+      "offset": 32
+    },
+    {
+      "access": "rw",
+      "bytes": 8,
+      "fields": [
+        "value"
+      ],
+      "name": "MAX_NET_POSITION",
+      "offset": 40
+    },
+    {
+      "access": "rw",
+      "bytes": 1,
+      "fields": [
+        "trading_enabled",
+        "halted",
+        "side_buy"
+      ],
+      "name": "CONTROL",
+      "offset": 48
+    },
+    {
+      "access": "rw",
+      "bytes": 1,
+      "fields": [
+        "clock_healthy",
+        "feed_healthy",
+        "limits_valid"
+      ],
+      "name": "HEALTH",
+      "offset": 49
+    },
+    {
+      "access": "rw",
+      "bytes": 8,
+      "fields": [
+        "version"
+      ],
+      "name": "LIMITS_VERSION",
+      "offset": 56
+    }
+  ]
+}

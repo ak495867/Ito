@@ -1,0 +1,113 @@
+name: Ito CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ito-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-and-python:
+    name: Source and Python checks on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.12"]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Check source policy
+        run: python scripts/check_no_comments.py
+      - name: Run Python tests
+        run: python -m unittest discover -s tests/python
+      - name: Validate connectivity configuration
+        run: python python/connectivity/config_linter.py
+      - name: Validate production readiness gate behavior
+        run: |
+          set +e
+          python scripts/production/readiness_check.py --output readiness.json
+          status=$?
+          set -e
+          test "$status" -eq 1
+          grep -q '"status": "not_production_ready"' readiness.json
+
+  rust:
+    name: Rust checks on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Cache Cargo registry and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust/Cargo.lock', 'rust/**/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-cargo-
+      - name: Test Rust workspace
+        run: cargo test --workspace --manifest-path rust/Cargo.toml
+      - name: Check Rust formatting
+        run: cargo fmt --all --manifest-path rust/Cargo.toml -- --check
+
+  linux-full:
+    name: Full Linux pipeline
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build pkg-config libssl-dev ocaml-nox opam dune iverilog
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5.1.x
+          dune-cache: true
+      - name: Install OCaml dependencies
+        run: opam install dune yojson --yes
+      - name: Run complete Ito pipeline
+        run: ./scripts/build_all.sh
+      - name: Upload readiness and benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ito-linux-evidence
+          path: |
+            build/readiness/readiness.json
+            docs/benchmarks/multibranch_suite.json
+            docs/benchmarks/multibranch_suite_report.md
+            docs/benchmarks/multibranch_suite_p99.png
+          if-no-files-found: ignore

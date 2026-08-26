@@ -1,0 +1,14 @@
+{
+  "broker_id": 9,
+  "name": "broker-b-sim",
+  "protocol": "fix",
+  "region": "eu",
+  "endpoint": "127.0.0.1:9206",
+  "enabled": true,
+  "live_enabled": false,
+  "tls_required": true,
+  "heartbeat_ms": 1000,
+  "max_messages_per_second": 20000,
+  "account_scope": [201, 202],
+  "certification_state": "simulator_only"
+}

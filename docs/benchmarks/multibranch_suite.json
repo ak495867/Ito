@@ -1,0 +1,368 @@
+{
+  "generated_at_ns": 1787720383746884202,
+  "parameters": {
+    "base_latency_ns": 25000,
+    "branches": 4,
+    "interval_ns": 1000,
+    "jitter_levels_ns": [
+      0,
+      1000,
+      5000,
+      10000
+    ],
+    "messages_per_branch": 5000,
+    "seed": 20260825,
+    "venue_adapters": [
+      "exchange-a-sim",
+      "exchange-b-sim",
+      "broker-a-sim",
+      "broker-b-sim"
+    ]
+  },
+  "scenarios": [
+    {
+      "aggregate": {
+        "max_ns": 65676,
+        "mean_ns": 55200.33,
+        "messages": 80000,
+        "p50_ns": 55022,
+        "p95_ns": 59351,
+        "p99_ns": 60571
+      },
+      "branches": 4,
+      "branches_detail": {
+        "branch-01": {
+          "max_ns": 64502,
+          "mean_ns": 54448.1,
+          "messages": 20000,
+          "p50_ns": 54134,
+          "p95_ns": 58455,
+          "p99_ns": 59624
+        },
+        "branch-02": {
+          "max_ns": 65289,
+          "mean_ns": 54945.05,
+          "messages": 20000,
+          "p50_ns": 54635,
+          "p95_ns": 58929,
+          "p99_ns": 60106
+        },
+        "branch-03": {
+          "max_ns": 63879,
+          "mean_ns": 55448.18,
+          "messages": 20000,
+          "p50_ns": 55131,
+          "p95_ns": 59462,
+          "p99_ns": 60605
+        },
+        "branch-04": {
+          "max_ns": 65676,
+          "mean_ns": 55959.97,
+          "messages": 20000,
+          "p50_ns": 55631,
+          "p95_ns": 60012,
+          "p99_ns": 61116
+        }
+      },
+      "exchange_simulator": "exchange_simulator_pass",
+      "jitter_ns": 0,
+      "messages": 80000,
+      "throughput_messages_per_second": 999259.64,
+      "venues": 4,
+      "venues_detail": {
+        "broker-a-sim": {
+          "max_ns": 61952,
+          "mean_ns": 56198.29,
+          "messages": 20000,
+          "p50_ns": 56194,
+          "p95_ns": 57852,
+          "p99_ns": 58476
+        },
+        "broker-b-sim": {
+          "max_ns": 65676,
+          "mean_ns": 58201.45,
+          "messages": 20000,
+          "p50_ns": 58187,
+          "p95_ns": 60411,
+          "p99_ns": 61347
+        },
+        "exchange-a-sim": {
+          "max_ns": 53199,
+          "mean_ns": 52199.97,
+          "messages": 20000,
+          "p50_ns": 52200,
+          "p95_ns": 53095,
+          "p99_ns": 53178
+        },
+        "exchange-b-sim": {
+          "max_ns": 57757,
+          "mean_ns": 54201.6,
+          "messages": 20000,
+          "p50_ns": 54205,
+          "p95_ns": 55343,
+          "p99_ns": 55698
+        }
+      },
+      "virtual_duration_ns": 80059273,
+      "wall_seconds": 0.0
+    },
+    {
+      "aggregate": {
+        "max_ns": 78050,
+        "mean_ns": 55203.54,
+        "messages": 80000,
+        "p50_ns": 54905,
+        "p95_ns": 61412,
+        "p99_ns": 64138
+      },
+      "branches": 4,
+      "branches_detail": {
+        "branch-01": {
+          "max_ns": 77628,
+          "mean_ns": 54459.12,
+          "messages": 20000,
+          "p50_ns": 54148,
+          "p95_ns": 60609,
+          "p99_ns": 63201
+        },
+        "branch-02": {
+          "max_ns": 77796,
+          "mean_ns": 54935.09,
+          "messages": 20000,
+          "p50_ns": 54627,
+          "p95_ns": 61085,
+          "p99_ns": 63822
+        },
+        "branch-03": {
+          "max_ns": 78050,
+          "mean_ns": 55464.44,
+          "messages": 20000,
+          "p50_ns": 55181,
+          "p95_ns": 61549,
+          "p99_ns": 64206
+        },
+        "branch-04": {
+          "max_ns": 76060,
+          "mean_ns": 55955.53,
+          "messages": 20000,
+          "p50_ns": 55635,
+          "p95_ns": 62104,
+          "p99_ns": 64807
+        }
+      },
+      "exchange_simulator": "exchange_simulator_pass",
+      "jitter_ns": 1000,
+      "messages": 80000,
+      "throughput_messages_per_second": 999248.13,
+      "venues": 4,
+      "venues_detail": {
+        "broker-a-sim": {
+          "max_ns": 77166,
+          "mean_ns": 56216.78,
+          "messages": 20000,
+          "p50_ns": 56206,
+          "p95_ns": 60907,
+          "p99_ns": 62925
+        },
+        "broker-b-sim": {
+          "max_ns": 78050,
+          "mean_ns": 58193.14,
+          "messages": 20000,
+          "p50_ns": 58149,
+          "p95_ns": 63607,
+          "p99_ns": 65855
+        },
+        "exchange-a-sim": {
+          "max_ns": 65309,
+          "mean_ns": 52199.36,
+          "messages": 20000,
+          "p50_ns": 52193,
+          "p95_ns": 55628,
+          "p99_ns": 57116
+        },
+        "exchange-b-sim": {
+          "max_ns": 74606,
+          "mean_ns": 54204.89,
+          "messages": 20000,
+          "p50_ns": 54170,
+          "p95_ns": 58277,
+          "p99_ns": 60051
+        }
+      },
+      "virtual_duration_ns": 80060195,
+      "wall_seconds": 0.0
+    },
+    {
+      "aggregate": {
+        "max_ns": 130205,
+        "mean_ns": 55264.59,
+        "messages": 80000,
+        "p50_ns": 55111,
+        "p95_ns": 73318,
+        "p99_ns": 81408
+      },
+      "branches": 4,
+      "branches_detail": {
+        "branch-01": {
+          "max_ns": 121685,
+          "mean_ns": 54513.04,
+          "messages": 20000,
+          "p50_ns": 54369,
+          "p95_ns": 72700,
+          "p99_ns": 80404
+        },
+        "branch-02": {
+          "max_ns": 130205,
+          "mean_ns": 54982.85,
+          "messages": 20000,
+          "p50_ns": 54862,
+          "p95_ns": 73042,
+          "p99_ns": 80994
+        },
+        "branch-03": {
+          "max_ns": 123448,
+          "mean_ns": 55486.51,
+          "messages": 20000,
+          "p50_ns": 55310,
+          "p95_ns": 73437,
+          "p99_ns": 81486
+        },
+        "branch-04": {
+          "max_ns": 127834,
+          "mean_ns": 56075.97,
+          "messages": 20000,
+          "p50_ns": 55927,
+          "p95_ns": 74051,
+          "p99_ns": 82279
+        }
+      },
+      "exchange_simulator": "exchange_simulator_pass",
+      "jitter_ns": 5000,
+      "messages": 80000,
+      "throughput_messages_per_second": 999068.21,
+      "venues": 4,
+      "venues_detail": {
+        "broker-a-sim": {
+          "max_ns": 127557,
+          "mean_ns": 56322.19,
+          "messages": 20000,
+          "p50_ns": 56218,
+          "p95_ns": 74198,
+          "p99_ns": 81985
+        },
+        "broker-b-sim": {
+          "max_ns": 130205,
+          "mean_ns": 58145.01,
+          "messages": 20000,
+          "p50_ns": 58090,
+          "p95_ns": 76536,
+          "p99_ns": 84984
+        },
+        "exchange-a-sim": {
+          "max_ns": 113920,
+          "mean_ns": 52310.75,
+          "messages": 20000,
+          "p50_ns": 52197,
+          "p95_ns": 69012,
+          "p99_ns": 76230
+        },
+        "exchange-b-sim": {
+          "max_ns": 127834,
+          "mean_ns": 54280.42,
+          "messages": 20000,
+          "p50_ns": 54220,
+          "p95_ns": 71283,
+          "p99_ns": 78637
+        }
+      },
+      "virtual_duration_ns": 80074613,
+      "wall_seconds": 0.0
+    },
+    {
+      "aggregate": {
+        "max_ns": 201323,
+        "mean_ns": 55353.72,
+        "messages": 80000,
+        "p50_ns": 55180,
+        "p95_ns": 89721,
+        "p99_ns": 105170
+      },
+      "branches": 4,
+      "branches_detail": {
+        "branch-01": {
+          "max_ns": 182628,
+          "mean_ns": 54683.66,
+          "messages": 20000,
+          "p50_ns": 54435,
+          "p95_ns": 89174,
+          "p99_ns": 104754
+        },
+        "branch-02": {
+          "max_ns": 188557,
+          "mean_ns": 55000.53,
+          "messages": 20000,
+          "p50_ns": 54786,
+          "p95_ns": 89262,
+          "p99_ns": 104828
+        },
+        "branch-03": {
+          "max_ns": 201323,
+          "mean_ns": 55875.4,
+          "messages": 20000,
+          "p50_ns": 55692,
+          "p95_ns": 90314,
+          "p99_ns": 105715
+        },
+        "branch-04": {
+          "max_ns": 192544,
+          "mean_ns": 55855.3,
+          "messages": 20000,
+          "p50_ns": 55731,
+          "p95_ns": 90160,
+          "p99_ns": 105175
+        }
+      },
+      "exchange_simulator": "exchange_simulator_pass",
+      "jitter_ns": 10000,
+      "messages": 80000,
+      "throughput_messages_per_second": 998843.99,
+      "venues": 4,
+      "venues_detail": {
+        "broker-a-sim": {
+          "max_ns": 182628,
+          "mean_ns": 56549.2,
+          "messages": 20000,
+          "p50_ns": 56282,
+          "p95_ns": 91245,
+          "p99_ns": 106569
+        },
+        "broker-b-sim": {
+          "max_ns": 195969,
+          "mean_ns": 58213.42,
+          "messages": 20000,
+          "p50_ns": 57988,
+          "p95_ns": 93479,
+          "p99_ns": 109387
+        },
+        "exchange-a-sim": {
+          "max_ns": 192544,
+          "mean_ns": 52267.74,
+          "messages": 20000,
+          "p50_ns": 52101,
+          "p95_ns": 85449,
+          "p99_ns": 99990
+        },
+        "exchange-b-sim": {
+          "max_ns": 201323,
+          "mean_ns": 54384.53,
+          "messages": 20000,
+          "p50_ns": 54407,
+          "p95_ns": 87796,
+          "p99_ns": 103385
+        }
+      },
+      "virtual_duration_ns": 80092588,
+      "wall_seconds": 0.0
+    }
+  ]
+}

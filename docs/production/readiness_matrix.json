@@ -1,0 +1,25 @@
+{
+  "matrix_version": 1,
+  "system": "Ito",
+  "status": "not_production_ready",
+  "gates": [
+    {"id": "GATE-SW-001", "domain": "software", "name": "multi-language build and tests", "implemented": true, "evidence": "scripts/build_all.sh"},
+    {"id": "GATE-SW-002", "domain": "software", "name": "source policy and reproducible build", "implemented": true, "evidence": "scripts/check_no_comments.py and CMake"},
+    {"id": "GATE-SW-003", "domain": "software", "name": "release provenance and dependency inventory", "implemented": true, "evidence": "scripts/operations/generate_sbom.py"},
+    {"id": "GATE-SW-004", "domain": "software", "name": "portfolio exposure and P&L controls", "implemented": true, "evidence": "python/portfolio/portfolio.py and portfolio_snapshot.py"},
+    {"id": "GATE-SEC-001", "domain": "security", "name": "TLS peer verification and required mTLS transport", "implemented": true, "evidence": "cpp/ito_connectivity/endpoint_connector.cpp"},
+    {"id": "GATE-SEC-003", "domain": "security", "name": "release artifact digest binding and verification", "implemented": true, "evidence": "scripts/operations/verify_release_binding.py and rust/policy_signer"},
+    {"id": "GATE-SEC-004", "domain": "security", "name": "local key rotation invariant drill", "implemented": true, "evidence": "scripts/operations/key_rotation_drill.py"},
+    {"id": "GATE-SEC-002", "domain": "security", "name": "production key provisioning and rotation drill", "implemented": false, "evidence": "external HSM and identity infrastructure required", "simulation_evidence": "scripts/operations/production_gate_simulations.py", "production_evidence_required": "HSM/KMS-backed non-exportable keys, dual-control ceremony, rotation, revocation, recovery, and audit logs"},
+    {"id": "GATE-VENUE-001", "domain": "connectivity", "name": "venue-native protocol certification", "implemented": false, "evidence": "venue-specific certification required", "simulation_evidence": "scripts/operations/production_gate_simulations.py and tests/connectivity", "production_evidence_required": "venue conformance results for sequencing, rejects, heartbeats, cancels, reconnects, throttles, drop-copy, and certification sign-off"},
+    {"id": "GATE-VENUE-002", "domain": "connectivity", "name": "live credentials and session conformance", "implemented": false, "evidence": "controlled broker and exchange environments required", "simulation_evidence": "scripts/operations/production_gate_simulations.py and cpp/ito_connectivity", "production_evidence_required": "real credentials, entitlement checks, market-data soak, shadow orders, execution reports, and reconciliation in controlled environments"},
+    {"id": "GATE-HW-001", "domain": "hardware", "name": "RTL simulation and vector bridge", "implemented": true, "evidence": "rtl/tb and scripts/build_all.sh"},
+    {"id": "GATE-HW-002", "domain": "hardware", "name": "synthesis timing CDC formal and HIL", "implemented": false, "evidence": "FPGA vendor toolchain and target boards required", "simulation_evidence": "scripts/operations/production_gate_simulations.py and rtl/tb", "production_evidence_required": "vendor synthesis, place-and-route timing margins, CDC/formal reports, signed bitstream, board HIL, and fault injection"},
+    {"id": "GATE-OPS-001", "domain": "operations", "name": "failover reconciliation and fencing drill", "implemented": true, "evidence": "tests/failover and python/operations"},
+    {"id": "GATE-OPS-003", "domain": "operations", "name": "manifest-verified recovery and local health evidence", "implemented": true, "evidence": "scripts/operations/backup_restore.py and health_report.py"},
+    {"id": "GATE-OPS-004", "domain": "operations", "name": "transactional local event store and snapshot recovery", "implemented": true, "evidence": "python/operations/durable_store.py"},
+    {"id": "GATE-OPS-005", "domain": "operations", "name": "portfolio exposure and Prometheus evidence", "implemented": true, "evidence": "python/portfolio/portfolio.py and python/operations/prometheus_exporter.py"},
+    {"id": "GATE-OPS-002", "domain": "operations", "name": "production observability and incident integration", "implemented": false, "evidence": "deployment telemetry and incident platform required", "simulation_evidence": "scripts/operations/production_gate_simulations.py and python/operations/prometheus_exporter.py", "production_evidence_required": "live exporters, dashboards, alert tests, paging escalation, incident drill, runbooks, and after-action review"},
+    {"id": "GATE-GOV-001", "domain": "governance", "name": "independent risk compliance and change approval", "implemented": false, "evidence": "organizational approval required", "simulation_evidence": "scripts/operations/production_gate_simulations.py", "production_evidence_required": "independent risk, compliance, legal, model-validation, change-control, access-review, and live-activation approvals"}
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ito://schemas/order-intent/1",
+  "title": "Ito Order Intent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "correlation_id", "strategy_id", "branch_id", "entity_id", "instrument_id", "venue_id", "account_id", "side", "order_type", "time_in_force", "price_ticks", "quantity", "created_ns"],
+  "properties": {
+    "event_id": {"type": "integer", "minimum": 1},
+    "correlation_id": {"type": "integer", "minimum": 1},
+    "strategy_id": {"type": "integer", "minimum": 1},
+    "branch_id": {"type": "integer", "minimum": 1},
+    "entity_id": {"type": "integer", "minimum": 1},
+    "instrument_id": {"type": "integer", "minimum": 1},
+    "venue_id": {"type": "integer", "minimum": 1},
+    "account_id": {"type": "integer", "minimum": 1},
+    "side": {"enum": ["buy", "sell"]},
+    "order_type": {"enum": ["limit", "market"]},
+    "time_in_force": {"enum": ["day", "ioc", "fok"]},
+    "price_ticks": {"type": "integer", "minimum": 1},
+    "quantity": {"type": "integer", "minimum": 1},
+    "created_ns": {"type": "integer", "minimum": 1}
+  }
+}

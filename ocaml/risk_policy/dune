@@ -1,0 +1,4 @@
+(executable
+ (name risk_policy)
+ (modules risk_policy)
+ (flags (:standard -w @A-4-29-40-41-42-44-45-48-58)))

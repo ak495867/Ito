@@ -1,0 +1,20 @@
+{
+  "image": "ito:local",
+  "compose_file": "infra/docker/compose.branch.yml",
+  "nodes": [
+    {
+      "node_id": "branch-ny-node-01",
+      "docker_context": "branch-ny-node-01",
+      "branch_id": "11",
+      "entity_id": "21",
+      "mode": "restricted"
+    },
+    {
+      "node_id": "branch-london-node-01",
+      "docker_context": "branch-london-node-01",
+      "branch_id": "12",
+      "entity_id": "22",
+      "mode": "restricted"
+    }
+  ]
+}

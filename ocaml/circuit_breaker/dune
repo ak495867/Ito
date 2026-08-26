@@ -1,0 +1,9 @@
+(executable
+ (name circuit_breaker)
+ (modules circuit_breaker)
+ (flags (:standard -w @A-4-29-32-37-40-41-42-44-45-48-58-69)))
+
+(executable
+ (name dynamic_engine)
+ (modules dynamic_engine)
+ (flags (:standard -w @A-4-29-32-37-40-41-42-44-45-48-58-69)))
