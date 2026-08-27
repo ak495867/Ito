@@ -28,14 +28,26 @@ class SimulatedHsm:
         self.audit: list[dict[str, object]] = []
 
     def provision(self, version: int, operator: str, approver: str) -> str:
-        if version <= self.active_version or not operator or not approver or operator == approver:
+        if (
+            version <= self.active_version
+            or not operator
+            or not approver
+            or operator == approver
+        ):
             raise SimulationError("key_provisioning_policy_failed")
         key_material = secrets.token_bytes(32)
         self._keys[version] = key_material
         if self.active_version:
             self.revoked.add(self.active_version)
         self.active_version = version
-        self.audit.append({"action": "provision", "version": version, "operator": operator, "approver": approver})
+        self.audit.append(
+            {
+                "action": "provision",
+                "version": version,
+                "operator": operator,
+                "approver": approver,
+            }
+        )
         return digest(key_material.hex())
 
     def sign(self, version: int, payload: bytes) -> str:
@@ -52,7 +64,12 @@ class SimulatedHsm:
         raise SimulationError("key_export_denied")
 
     def verify_audit(self) -> bool:
-        return len(self.audit) >= 2 and self.active_version == 2 and 1 in self.revoked and all(item["operator"] != item["approver"] for item in self.audit)
+        return (
+            len(self.audit) >= 2
+            and self.active_version == 2
+            and 1 in self.revoked
+            and all(item["operator"] != item["approver"] for item in self.audit)
+        )
 
 
 class VenueSession:
@@ -80,7 +97,11 @@ class VenueSession:
         self.sequence = expected_sequence
 
     def send(self, client_order_id: int, action: str) -> str:
-        if not self.connected or client_order_id < 0 or action not in {"new", "cancel", "replace", "heartbeat", "drop_copy"}:
+        if (
+            not self.connected
+            or client_order_id < 0
+            or action not in {"new", "cancel", "replace", "heartbeat", "drop_copy"}
+        ):
             raise SimulationError("venue_session_request_failed")
         if self.messages_in_window >= self.throttle_per_second:
             self.sequence += 1
@@ -116,7 +137,17 @@ class VenueSession:
             raise SimulationError("venue_message_invalid") from error
         if sequence != expected_sequence or order_id < 0:
             raise SimulationError("venue_sequence_gap")
-        return fields[0] in {"ACK", "CANCELLED", "REPLACED", "HEARTBEAT", "DROP_COPY", "CANCEL_REJECT", "REPLACE_REJECT", "DUPLICATE_REJECT", "THROTTLE_REJECT"}
+        return fields[0] in {
+            "ACK",
+            "CANCELLED",
+            "REPLACED",
+            "HEARTBEAT",
+            "DROP_COPY",
+            "CANCEL_REJECT",
+            "REPLACE_REJECT",
+            "DUPLICATE_REJECT",
+            "THROTTLE_REJECT",
+        }
 
 
 def simulate_security() -> dict[str, object]:
@@ -136,8 +167,18 @@ def simulate_security() -> dict[str, object]:
     except SimulationError:
         export_rejected = True
     return {
-        "passed": hsm.verify(2, payload, signature) and not hsm.verify(1, payload, signature) and first_fingerprint != second_fingerprint and old_key_rejected and export_rejected and hsm.verify_audit(),
-        "checks": {"non_exportable": export_rejected, "old_key_revoked": old_key_rejected, "dual_control": hsm.verify_audit(), "signature_round_trip": hsm.verify(2, payload, signature)},
+        "passed": hsm.verify(2, payload, signature)
+        and not hsm.verify(1, payload, signature)
+        and first_fingerprint != second_fingerprint
+        and old_key_rejected
+        and export_rejected
+        and hsm.verify_audit(),
+        "checks": {
+            "non_exportable": export_rejected,
+            "old_key_revoked": old_key_rejected,
+            "dual_control": hsm.verify_audit(),
+            "signature_round_trip": hsm.verify(2, payload, signature),
+        },
     }
 
 
@@ -179,48 +220,123 @@ def simulate_shadow_session() -> dict[str, object]:
         attempted_live = True
     new_message = session.send(2001, "new")
     report = session.send(2001, "drop_copy")
-    return {"passed": attempted_live and session.receive(new_message, 1) and session.receive(report, 2), "checks": {"live_guard": attempted_live, "shadow_order": True, "drop_copy": True}}
+    return {
+        "passed": attempted_live
+        and session.receive(new_message, 1)
+        and session.receive(report, 2),
+        "checks": {
+            "live_guard": attempted_live,
+            "shadow_order": True,
+            "drop_copy": True,
+        },
+    }
 
 
 def simulate_hardware(root: Path) -> dict[str, object]:
-    package = (root / "rtl/common/generated/risk_frame_pkg.sv").read_text(encoding="utf-8")
+    package = (root / "rtl/common/generated/risk_frame_pkg.sv").read_text(
+        encoding="utf-8"
+    )
     gate = (root / "rtl/risk_gate/pre_trade_gate.sv").read_text(encoding="utf-8")
-    required = ("OFFSET_PRICE_TICKS", "OFFSET_LIMITS_VERSION", "side_buy", "decision_valid", "reason_code")
+    required = (
+        "OFFSET_PRICE_TICKS",
+        "OFFSET_LIMITS_VERSION",
+        "side_buy",
+        "decision_valid",
+        "reason_code",
+    )
     interface_check = all(token in package or token in gate for token in required)
-    timing_model = {"clock_mhz": 250, "target_period_ns": 4.0, "modeled_worst_path_ns": 2.6, "modeled_slack_ns": 1.4}
-    cdc_checks = ["async_reset_release", "request_clock_to_response_clock", "downstream_ready_backpressure"]
-    return {"passed": interface_check and timing_model["modeled_slack_ns"] > 0 and len(cdc_checks) == 3, "checks": {"interface_contract": interface_check, "modeled_timing_slack": timing_model["modeled_slack_ns"] > 0, "cdc_reset_checks": len(cdc_checks) == 3}, "timing_model": timing_model, "cdc_checks": cdc_checks}
+    timing_model = {
+        "clock_mhz": 250,
+        "target_period_ns": 4.0,
+        "modeled_worst_path_ns": 2.6,
+        "modeled_slack_ns": 1.4,
+    }
+    cdc_checks = [
+        "async_reset_release",
+        "request_clock_to_response_clock",
+        "downstream_ready_backpressure",
+    ]
+    return {
+        "passed": interface_check
+        and timing_model["modeled_slack_ns"] > 0
+        and len(cdc_checks) == 3,
+        "checks": {
+            "interface_contract": interface_check,
+            "modeled_timing_slack": timing_model["modeled_slack_ns"] > 0,
+            "cdc_reset_checks": len(cdc_checks) == 3,
+        },
+        "timing_model": timing_model,
+        "cdc_checks": cdc_checks,
+    }
 
 
 def simulate_incident() -> dict[str, object]:
     event_log: list[dict[str, object]] = []
     incident_id = "incident-001"
     event_log.append({"event": "opened", "id": incident_id, "severity": "critical"})
-    event_log.append({"event": "paged", "id": incident_id, "channel": "synthetic-pager"})
-    event_log.append({"event": "acknowledged", "id": incident_id, "owner": "on-call-ops"})
-    event_log.append({"event": "resolved", "id": incident_id, "runbook": "kill-and-reconcile-v1"})
-    valid = [item["event"] for item in event_log] == ["opened", "paged", "acknowledged", "resolved"]
-    return {"passed": valid, "checks": {"alert_deduplicated": True, "page_sent": True, "acknowledgment_required": True, "runbook_linked": True, "ordered_lifecycle": valid}, "events": event_log}
+    event_log.append(
+        {"event": "paged", "id": incident_id, "channel": "synthetic-pager"}
+    )
+    event_log.append(
+        {"event": "acknowledged", "id": incident_id, "owner": "on-call-ops"}
+    )
+    event_log.append(
+        {"event": "resolved", "id": incident_id, "runbook": "kill-and-reconcile-v1"}
+    )
+    valid = [item["event"] for item in event_log] == [
+        "opened",
+        "paged",
+        "acknowledged",
+        "resolved",
+    ]
+    return {
+        "passed": valid,
+        "checks": {
+            "alert_deduplicated": True,
+            "page_sent": True,
+            "acknowledgment_required": True,
+            "runbook_linked": True,
+            "ordered_lifecycle": valid,
+        },
+        "events": event_log,
+    }
 
 
 def simulate_governance(root: Path) -> dict[str, object]:
     binding = root / "build/release/binding.json"
     binding_source = "production" if binding.is_file() else "synthetic"
-    binding_digest = digest(binding.read_text(encoding="utf-8")) if binding.is_file() else digest("synthetic-release-binding-v2")
+    binding_digest = (
+        digest(binding.read_text(encoding="utf-8"))
+        if binding.is_file()
+        else digest("synthetic-release-binding-v2")
+    )
     approvals = [
         {"role": "risk_manager", "identity": "risk-a", "decision": "approve"},
         {"role": "operations_manager", "identity": "ops-b", "decision": "approve"},
     ]
-    serialized = json.dumps({"change_id": "release-2026-08-25-001", "binding_digest": binding_digest, "approvals": approvals}, sort_keys=True)
+    serialized = json.dumps(
+        {
+            "change_id": "release-2026-08-25-001",
+            "binding_digest": binding_digest,
+            "approvals": approvals,
+        },
+        sort_keys=True,
+    )
     approval_hash = digest(serialized)
     checks = {
         "distinct_identities": len({item["identity"] for item in approvals}) == 2,
-        "required_roles": {item["role"] for item in approvals} == {"risk_manager", "operations_manager"},
+        "required_roles": {item["role"] for item in approvals}
+        == {"risk_manager", "operations_manager"},
         "all_approved": all(item["decision"] == "approve" for item in approvals),
         "change_bound": binding_digest != "missing",
         "approval_hash": len(approval_hash) == 64,
     }
-    return {"passed": all(checks.values()), "checks": checks, "approval_hash": approval_hash, "binding_source": binding_source}
+    return {
+        "passed": all(checks.values()),
+        "checks": checks,
+        "approval_hash": approval_hash,
+        "binding_source": binding_source,
+    }
 
 
 def run(root: Path) -> dict[str, object]:
@@ -255,7 +371,9 @@ def main() -> int:
     args = parser.parse_args()
     result = run(args.root.resolve())
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     print(json.dumps(result, sort_keys=True))
     return 0 if result["status"] == "passed" else 1
 

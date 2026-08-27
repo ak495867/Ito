@@ -5,13 +5,22 @@ import json
 from pathlib import Path
 
 
-def drill(lease: dict[str, object], findings: list[dict[str, object]]) -> dict[str, object]:
+def drill(
+    lease: dict[str, object], findings: list[dict[str, object]]
+) -> dict[str, object]:
     owner = str(lease.get("owner_id", ""))
     epoch = int(lease.get("epoch", 0))
     expired = int(lease.get("expires_at_ns", 0)) <= int(lease.get("now_ns", 0))
     ambiguous = any(item.get("state") != "matched" for item in findings)
     promoted = bool(owner) and epoch > 0 and not expired and not ambiguous
-    return {"previous_owner": owner, "previous_epoch": epoch, "expired": expired, "ambiguous": ambiguous, "promoted": promoted, "action": "promote_standby" if promoted else "hold_and_escalate"}
+    return {
+        "previous_owner": owner,
+        "previous_epoch": epoch,
+        "expired": expired,
+        "ambiguous": ambiguous,
+        "promoted": promoted,
+        "action": "promote_standby" if promoted else "hold_and_escalate",
+    }
 
 
 def main() -> int:

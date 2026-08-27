@@ -35,7 +35,12 @@ class ReplayBacktest:
         self.fills: list[Fill] = []
 
     def apply(self, quote: Quote, signal: Signal) -> Fill | None:
-        if quote.timestamp_ns <= 0 or quote.bid_ticks <= 0 or quote.ask_ticks < quote.bid_ticks or signal.side not in (-1, 1):
+        if (
+            quote.timestamp_ns <= 0
+            or quote.bid_ticks <= 0
+            or quote.ask_ticks < quote.bid_ticks
+            or signal.side not in (-1, 1)
+        ):
             return None
         price = quote.ask_ticks if signal.side > 0 else quote.bid_ticks
         signed_quantity = signal.quantity if signal.side > 0 else -signal.quantity

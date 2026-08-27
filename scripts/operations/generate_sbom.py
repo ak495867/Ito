@@ -14,7 +14,11 @@ class ProvenanceError(RuntimeError):
 def source_digest(root: Path) -> str:
     hasher = hashlib.sha256()
     excluded = {"build", "target", "_build", ".git", "__pycache__"}
-    paths = [path for path in root.rglob("*") if path.is_file() and not any(part in excluded for part in path.parts)]
+    paths = [
+        path
+        for path in root.rglob("*")
+        if path.is_file() and not any(part in excluded for part in path.parts)
+    ]
     for path in sorted(paths):
         relative = path.relative_to(root).as_posix().encode("utf-8")
         payload = path.read_bytes()
@@ -32,7 +36,11 @@ def rust_components(lock_path: Path) -> list[dict[str, str]]:
         raise ProvenanceError(f"lockfile_invalid:{error}") from error
     components = []
     for package in data.get("package", []):
-        if not isinstance(package, dict) or not isinstance(package.get("name"), str) or not isinstance(package.get("version"), str):
+        if (
+            not isinstance(package, dict)
+            or not isinstance(package.get("name"), str)
+            or not isinstance(package.get("version"), str)
+        ):
             raise ProvenanceError("package_invalid")
         component = {"name": package["name"], "version": package["version"]}
         if isinstance(package.get("source"), str):
@@ -63,7 +71,9 @@ def main() -> int:
     args = parser.parse_args()
     document = build_document(args.root.resolve())
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     print("provenance_generated")
     return 0
 

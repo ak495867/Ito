@@ -8,7 +8,15 @@ from pathlib import Path
 def aggregate(sessions: list[dict[str, object]]) -> dict[str, object]:
     ready = [item for item in sessions if item.get("status") == "ready"]
     degraded = [item for item in sessions if item.get("status") != "ready"]
-    return {"session_count": len(sessions), "ready_count": len(ready), "degraded_count": len(degraded), "execution_enabled": bool(sessions) and not degraded and len(ready) == len(sessions), "venues": sessions}
+    return {
+        "session_count": len(sessions),
+        "ready_count": len(ready),
+        "degraded_count": len(degraded),
+        "execution_enabled": bool(sessions)
+        and not degraded
+        and len(ready) == len(sessions),
+        "venues": sessions,
+    }
 
 
 def main() -> int:

@@ -34,14 +34,22 @@ def validate_profiles(paths: list[Path]) -> list[str]:
                 errors.append(f"field_invalid:{path}:{field}")
         if value.get("live_enabled") is not False:
             errors.append(f"live_must_be_disabled:{path}")
-        if not isinstance(value.get("tls_required"), bool) or value["tls_required"] is not True:
+        if (
+            not isinstance(value.get("tls_required"), bool)
+            or value["tls_required"] is not True
+        ):
             errors.append(f"tls_required:{path}")
     return errors
 
 
 def main() -> int:
     root = Path(__file__).resolve().parents[2]
-    paths = [root / "config/exchanges/exchange-a-sim.json", root / "config/exchanges/exchange-b-sim.json", root / "config/brokers/broker-a-sim.json", root / "config/brokers/broker-b-sim.json"]
+    paths = [
+        root / "config/exchanges/exchange-a-sim.json",
+        root / "config/exchanges/exchange-b-sim.json",
+        root / "config/brokers/broker-a-sim.json",
+        root / "config/brokers/broker-b-sim.json",
+    ]
     errors = validate_profiles(paths)
     matrix = load(root / "config/routing/adapter_matrix.json")
     adapters = matrix.get("adapters", [])
@@ -55,7 +63,13 @@ def main() -> int:
         errors.append("duplicate_adapter_venue_id")
     if any(item.get("live_enabled") is not False for item in adapters):
         errors.append("adapter_live_must_be_disabled")
-    if set(matrix.get("language_ownership", {})) != {"cpp", "rust", "ocaml", "systemverilog", "python"}:
+    if set(matrix.get("language_ownership", {})) != {
+        "cpp",
+        "rust",
+        "ocaml",
+        "systemverilog",
+        "python",
+    }:
         errors.append("language_ownership_incomplete")
     if errors:
         print("\n".join(errors), file=sys.stderr)

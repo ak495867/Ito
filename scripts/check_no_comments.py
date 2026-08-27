@@ -28,10 +28,17 @@ def main() -> int:
         if not root.exists():
             continue
         for path in root.rglob("*"):
-            if not path.is_file() or path.suffix not in EXTENSIONS or "_build" in path.parts or "build" in path.parts:
+            if (
+                not path.is_file()
+                or path.suffix not in EXTENSIONS
+                or "_build" in path.parts
+                or "build" in path.parts
+            ):
                 continue
             pattern = PATTERNS[path.suffix]
-            for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            for line_number, line in enumerate(
+                path.read_text(encoding="utf-8").splitlines(), 1
+            ):
                 if pattern.search(line):
                     failures.append(f"{path}:{line_number}")
     if failures:

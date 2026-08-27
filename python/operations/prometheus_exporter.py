@@ -20,7 +20,9 @@ def load_snapshot(path: Path) -> dict[str, object]:
     return value
 
 
-def render_metrics(health: dict[str, object], portfolio: dict[str, object] | None = None) -> str:
+def render_metrics(
+    health: dict[str, object], portfolio: dict[str, object] | None = None
+) -> str:
     local = 1 if health.get("local_status") == "healthy" else 0
     production = 1 if health.get("production_status") == "production_ready" else 0
     recovery = 1 if health.get("recovery_artifact_present") is True else 0
@@ -62,7 +64,11 @@ def make_handler(health_path: Path, portfolio_path: Path | None):
                 return
             try:
                 health = load_snapshot(health_path)
-                portfolio = load_snapshot(portfolio_path) if portfolio_path is not None and portfolio_path.is_file() else None
+                portfolio = (
+                    load_snapshot(portfolio_path)
+                    if portfolio_path is not None and portfolio_path.is_file()
+                    else None
+                )
                 payload = render_metrics(health, portfolio).encode("utf-8")
             except ExporterError:
                 self.send_response(503)
@@ -90,9 +96,14 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=9108)
     args = parser.parse_args()
     if args.listen:
-        ThreadingHTTPServer((args.host, args.port), make_handler(args.health, args.portfolio)).serve_forever()
+        ThreadingHTTPServer(
+            (args.host, args.port), make_handler(args.health, args.portfolio)
+        ).serve_forever()
     else:
-        output = render_metrics(load_snapshot(args.health), load_snapshot(args.portfolio) if args.portfolio else None)
+        output = render_metrics(
+            load_snapshot(args.health),
+            load_snapshot(args.portfolio) if args.portfolio else None,
+        )
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(output, encoding="utf-8")

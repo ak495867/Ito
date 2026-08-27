@@ -18,15 +18,37 @@ def build_snapshot(value: dict[str, object]) -> dict[str, object]:
     raw_limits = value.get("limits")
     raw_fills = value.get("fills")
     raw_marks = value.get("marks", {})
-    if not isinstance(raw_limits, dict) or not isinstance(raw_fills, list) or not isinstance(raw_marks, dict):
+    if (
+        not isinstance(raw_limits, dict)
+        or not isinstance(raw_fills, list)
+        or not isinstance(raw_marks, dict)
+    ):
         raise ValueError("input_invalid")
-    limits = PortfolioLimits(*(int(raw_limits[name]) for name in ("max_net_position", "max_gross_position", "max_gross_notional_ticks", "max_concentration_ticks", "max_loss_ticks")))
+    limits = PortfolioLimits(
+        *(
+            int(raw_limits[name])
+            for name in (
+                "max_net_position",
+                "max_gross_position",
+                "max_gross_notional_ticks",
+                "max_concentration_ticks",
+                "max_loss_ticks",
+            )
+        )
+    )
     portfolio = Portfolio(limits)
     for fill in raw_fills:
         if not isinstance(fill, dict):
             raise ValueError("fill_invalid")
-        portfolio.apply_fill(int(fill["instrument_id"]), int(fill["side"]), int(fill["quantity"]), int(fill["price_ticks"]))
-    marks = {int(instrument_id): int(price) for instrument_id, price in raw_marks.items()}
+        portfolio.apply_fill(
+            int(fill["instrument_id"]),
+            int(fill["side"]),
+            int(fill["quantity"]),
+            int(fill["price_ticks"]),
+        )
+    marks = {
+        int(instrument_id): int(price) for instrument_id, price in raw_marks.items()
+    }
     return portfolio.snapshot(marks)
 
 

@@ -21,7 +21,15 @@ def load_events(path: Path) -> list[Event]:
         if not line.strip():
             continue
         raw = json.loads(line)
-        events.append(Event(int(raw["event_id"]), int(raw["sequence"]), str(raw["event_type"]), int(raw["correlation_id"]), str(raw["payload"])))
+        events.append(
+            Event(
+                int(raw["event_id"]),
+                int(raw["sequence"]),
+                str(raw["event_type"]),
+                int(raw["correlation_id"]),
+                str(raw["payload"]),
+            )
+        )
     return events
 
 
@@ -31,7 +39,9 @@ def validate(events: list[Event]) -> list[str]:
     event_ids: set[int] = set()
     for event in events:
         if event.event_id <= 0 or event.correlation_id < 0:
-            failures.append(f"identifier_invalid:{event.event_id}:{event.correlation_id}")
+            failures.append(
+                f"identifier_invalid:{event.event_id}:{event.correlation_id}"
+            )
         if event.event_id in event_ids:
             failures.append(f"duplicate_event_id:{event.event_id}")
         event_ids.add(event.event_id)
@@ -47,7 +57,12 @@ def main() -> int:
         return 2
     events = load_events(Path(sys.argv[1]))
     failures = validate(events)
-    print(json.dumps({"events": len(events), "valid": not failures, "failures": failures}, sort_keys=True))
+    print(
+        json.dumps(
+            {"events": len(events), "valid": not failures, "failures": failures},
+            sort_keys=True,
+        )
+    )
     return 0 if not failures else 1
 
 

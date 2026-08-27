@@ -18,17 +18,31 @@ def digest(path: Path) -> str:
     return hasher.hexdigest()
 
 
-def verify(binding_path: Path, policy_path: Path, rtl_path: Path, schema_path: Path) -> None:
+def verify(
+    binding_path: Path, policy_path: Path, rtl_path: Path, schema_path: Path
+) -> None:
     try:
         binding = json.loads(binding_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         raise BindingError(f"invalid_binding:{error}") from error
-    if not isinstance(binding, dict) or not isinstance(binding.get("policy_version"), int) or binding["policy_version"] <= 0:
+    if (
+        not isinstance(binding, dict)
+        or not isinstance(binding.get("policy_version"), int)
+        or binding["policy_version"] <= 0
+    ):
         raise BindingError("invalid_policy_version")
-    paths = (("artifact_digest", policy_path), ("rtl_digest", rtl_path), ("schema_digest", schema_path))
+    paths = (
+        ("artifact_digest", policy_path),
+        ("rtl_digest", rtl_path),
+        ("schema_digest", schema_path),
+    )
     for field, path in paths:
         expected = binding.get(field)
-        if not isinstance(expected, str) or len(expected) != 64 or any(character not in "0123456789abcdef" for character in expected):
+        if (
+            not isinstance(expected, str)
+            or len(expected) != 64
+            or any(character not in "0123456789abcdef" for character in expected)
+        ):
             raise BindingError(f"invalid_digest:{field}")
         if not path.is_file() or digest(path) != expected:
             raise BindingError(f"digest_mismatch:{field}")

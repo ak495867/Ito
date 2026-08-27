@@ -44,7 +44,11 @@ def relative_path(root: Path, path: Path) -> str:
         root_name = os.path.normcase(os.path.realpath(os.path.abspath(os.fspath(root))))
         path_name = os.path.normcase(os.path.realpath(os.path.abspath(os.fspath(path))))
         relative = Path(os.path.relpath(path_name, root_name))
-    if relative.is_absolute() or relative == Path(os.pardir) or relative.parts[:1] == (os.pardir,):
+    if (
+        relative.is_absolute()
+        or relative == Path(os.pardir)
+        or relative.parts[:1] == (os.pardir,)
+    ):
         raise BackupError(f"outside_root:{path}")
     return relative.as_posix()
 
@@ -79,7 +83,11 @@ def collect(root: Path, requested: list[str]) -> list[Path]:
         if candidate.is_file():
             files.add(candidate)
         else:
-            files.update(path for path in candidate.rglob("*") if path.is_file() and not path.is_symlink())
+            files.update(
+                path
+                for path in candidate.rglob("*")
+                if path.is_file() and not path.is_symlink()
+            )
     return sorted(files)
 
 
@@ -87,7 +95,9 @@ def manifest(root: Path, files: list[Path]) -> dict[str, object]:
     entries = []
     for path in files:
         relative = relative_path(root, path)
-        entries.append({"path": relative, "size": path.stat().st_size, "sha256": digest(path)})
+        entries.append(
+            {"path": relative, "size": path.stat().st_size, "sha256": digest(path)}
+        )
     return {"format": 1, "root": root.name, "files": entries}
 
 
@@ -95,11 +105,15 @@ def backup(root: Path, output: Path, requested: list[str]) -> None:
     files = collect(root, requested)
     data = manifest(root, files)
     output.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{output.name}.", dir=output.parent)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{output.name}.", dir=output.parent
+    )
     os.close(descriptor)
     try:
         with tarfile.open(temporary_name, "w:gz") as archive:
-            payload = json.dumps(data, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            payload = json.dumps(data, sort_keys=True, separators=(",", ":")).encode(
+                "utf-8"
+            )
             info = tarfile.TarInfo("manifest.json")
             info.size = len(payload)
             archive.addfile(info, __import__("io").BytesIO(payload))
@@ -136,7 +150,11 @@ def restore(archive_path: Path, destination: Path) -> None:
             for entry in data["files"]:
                 relative = safe_relative(str(entry["path"]))
                 source = staging / relative
-                if not source.is_file() or source.stat().st_size != int(entry["size"]) or digest(source) != entry["sha256"]:
+                if (
+                    not source.is_file()
+                    or source.stat().st_size != int(entry["size"])
+                    or digest(source) != entry["sha256"]
+                ):
                     raise BackupError(f"integrity_failure:{relative.as_posix()}")
             for entry in data["files"]:
                 relative = safe_relative(str(entry["path"]))

@@ -56,11 +56,15 @@ class HardeningTests(unittest.TestCase):
     def test_portfolio_rejects_projected_exposure(self):
         portfolio = Portfolio(PortfolioLimits(10, 10, 1000, 1000, 1000))
         portfolio.apply_fill(7, 1, 10, 100)
-        self.assertEqual(portfolio.validate_order(7, 1, 1, 100), (False, "net_position_limit"))
+        self.assertEqual(
+            portfolio.validate_order(7, 1, 1, 100), (False, "net_position_limit")
+        )
 
     def test_portfolio_requires_explicit_short_permission(self):
         portfolio = Portfolio(PortfolioLimits(100, 200, 100000, 60000, 10000))
-        self.assertEqual(portfolio.validate_order(7, -1, 1, 100), (False, "short_sale_disabled"))
+        self.assertEqual(
+            portfolio.validate_order(7, -1, 1, 100), (False, "short_sale_disabled")
+        )
         with self.assertRaises(ValueError):
             portfolio.apply_fill(7, -1, 1, 100)
 
@@ -71,14 +75,34 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(len(result["limitations"]), 5)
 
     def test_prometheus_exporter_emits_allowlisted_metrics(self):
-        health = {"local_status": "healthy", "production_status": "not_production_ready", "external_blocker_count": 6, "recovery_artifact_present": True}
-        portfolio = {"net_position": 4, "gross_position": 4, "gross_notional_ticks": 500, "realized_pnl_ticks": 20, "unrealized_pnl_ticks": -5, "loss_ticks": 0}
+        health = {
+            "local_status": "healthy",
+            "production_status": "not_production_ready",
+            "external_blocker_count": 6,
+            "recovery_artifact_present": True,
+        }
+        portfolio = {
+            "net_position": 4,
+            "gross_position": 4,
+            "gross_notional_ticks": 500,
+            "realized_pnl_ticks": 20,
+            "unrealized_pnl_ticks": -5,
+            "loss_ticks": 0,
+        }
         metrics = render_metrics(health, portfolio)
         self.assertIn("ito_portfolio_net_position 4", metrics)
         self.assertNotIn("__dict__", metrics)
 
     def test_live_route_requires_explicit_enablement(self):
-        routes = [{"venue_id": 5, "rank": 1, "fee_bps": 2, "enabled": True, "max_order_quantity": 100}]
+        routes = [
+            {
+                "venue_id": 5,
+                "rank": 1,
+                "fee_bps": 2,
+                "enabled": True,
+                "max_order_quantity": 100,
+            }
+        ]
         sessions = [{"venue_id": 5, "status": "ready"}]
         self.assertEqual(recommend(routes, sessions, 10, live=True), [])
 
@@ -108,7 +132,18 @@ class HardeningTests(unittest.TestCase):
             directory_path = Path(directory)
             readiness = directory_path / "readiness.json"
             recovery = directory_path / "recovery.tar.gz"
-            readiness.write_text(json.dumps({"status": "not_production_ready", "gates": [{"id": "GATE-SW-001", "implemented": True}, {"id": "GATE-SEC-002", "implemented": False}]}), encoding="utf-8")
+            readiness.write_text(
+                json.dumps(
+                    {
+                        "status": "not_production_ready",
+                        "gates": [
+                            {"id": "GATE-SW-001", "implemented": True},
+                            {"id": "GATE-SEC-002", "implemented": False},
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
             recovery.write_bytes(b"recovery")
             result = build_report(readiness, recovery)
             self.assertEqual(result["local_status"], "healthy")
@@ -120,10 +155,24 @@ class HardeningTests(unittest.TestCase):
             policy = directory_path / "policy"
             rtl = directory_path / "rtl"
             schema = directory_path / "schema"
-            for path, value in ((policy, b"policy"), (rtl, b"rtl"), (schema, b"schema")):
+            for path, value in (
+                (policy, b"policy"),
+                (rtl, b"rtl"),
+                (schema, b"schema"),
+            ):
                 path.write_bytes(value)
             binding = directory_path / "binding.json"
-            binding.write_text(json.dumps({"policy_version": 1, "artifact_digest": hashlib.sha256(b"policy").hexdigest(), "rtl_digest": hashlib.sha256(b"rtl").hexdigest(), "schema_digest": hashlib.sha256(b"schema").hexdigest()}), encoding="utf-8")
+            binding.write_text(
+                json.dumps(
+                    {
+                        "policy_version": 1,
+                        "artifact_digest": hashlib.sha256(b"policy").hexdigest(),
+                        "rtl_digest": hashlib.sha256(b"rtl").hexdigest(),
+                        "schema_digest": hashlib.sha256(b"schema").hexdigest(),
+                    }
+                ),
+                encoding="utf-8",
+            )
             verify(binding, policy, rtl, schema)
 
     def test_backup_restore_and_tamper_detection(self):
@@ -137,9 +186,15 @@ class HardeningTests(unittest.TestCase):
             source.write_text('{"version":1}', encoding="utf-8")
             backup(workspace, archive, ["config/risk/policy.json"])
             restore(archive, restored)
-            self.assertEqual((restored / "config/risk/policy.json").read_text(encoding="utf-8"), '{"version":1}')
+            self.assertEqual(
+                (restored / "config/risk/policy.json").read_text(encoding="utf-8"),
+                '{"version":1}',
+            )
             tampered_archive = Path(directory) / "tampered.tar.gz"
-            with tarfile.open(archive, "r:gz") as original, tarfile.open(tampered_archive, "w:gz") as tampered:
+            with (
+                tarfile.open(archive, "r:gz") as original,
+                tarfile.open(tampered_archive, "w:gz") as tampered,
+            ):
                 manifest_member = original.getmember("manifest.json")
                 manifest_payload = original.extractfile(manifest_member).read()
                 tampered.addfile(manifest_member, io.BytesIO(manifest_payload))

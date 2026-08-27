@@ -20,11 +20,24 @@ def drill(output: Path) -> dict[str, object]:
     second_key = secrets.token_bytes(32)
     first = {"version": 1, "fingerprint": key_fingerprint(first_key), "active": False}
     second = {"version": 2, "fingerprint": key_fingerprint(second_key), "active": True}
-    if first["fingerprint"] == second["fingerprint"] or first["active"] or not second["active"] or second["version"] <= first["version"]:
+    if (
+        first["fingerprint"] == second["fingerprint"]
+        or first["active"]
+        or not second["active"]
+        or second["version"] <= first["version"]
+    ):
         raise RotationError("rotation_invariant_failed")
-    result = {"format": 1, "status": "passed", "active_version": second["version"], "retired_versions": [first["version"]], "key_fingerprints": [first["fingerprint"], second["fingerprint"]]}
+    result = {
+        "format": 1,
+        "status": "passed",
+        "active_version": second["version"],
+        "retired_versions": [first["version"]],
+        "key_fingerprints": [first["fingerprint"], second["fingerprint"]],
+    }
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    output.write_text(
+        json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return result
 
 
