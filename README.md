@@ -245,6 +245,26 @@ All six simulations can pass while the production gates remain unresolved. A sim
 
 ---
 
+## Running the Python Tests
+
+The Python source lives in flat directories (`python/*`, `scripts/operations`) rather than an installed package, so the test runners need them resolvable by bare module name.
+
+- **pytest** works as-is from the repo root (configured via `pyproject.toml`).
+- **`python -m unittest`** ignores `conftest.py`, so the repo root must be on `PYTHONPATH`:
+
+```bash
+# testrunner on Windows
+$env:PYTHONPATH = "D:\Ito-src\Ito"
+python -m unittest discover -s tests/python
+
+# PowerShell / bash
+PYTHONPATH=$PWD python -m unittest discover -s tests/python
+```
+
+The `sitecustomize.py` file at the repo root then extends the path to cover `python/replay`, `python/ops_tools`, `scripts`, and the other flat source directories, so every test module imports cleanly under either runner.
+
+---
+
 ## Full Build and Verification
 
 The unified build is the preferred local verification path:
