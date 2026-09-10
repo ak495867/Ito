@@ -49,9 +49,11 @@ class InMemoryKeyStore:
         if not any(item.version == version for item in versions):
             raise KeyError("key_version_missing")
         self._keys[key_id] = [
-            KeyVersion(item.key_id, item.version, False, item.exportable)
-            if item.version == version
-            else item
+            (
+                KeyVersion(item.key_id, item.version, False, item.exportable)
+                if item.version == version
+                else item
+            )
             for item in versions
         ]
 
@@ -69,16 +71,25 @@ class HmacSimulatorSigner:
     def _secret(self, key_id: str, version: int) -> bytes:
         key = (key_id, version)
         if key not in self._secrets:
-            self._secrets[key] = sha256(f"simulator:{key_id}:{version}".encode()).digest()
+            self._secrets[key] = sha256(
+                f"simulator:{key_id}:{version}".encode()
+            ).digest()
         return self._secrets[key]
 
     def sign(self, key_id: str, payload: bytes) -> bytes:
         active = self.key_store.active_key(key_id)
-        return hmac_new(self._secret(key_id, active.version), payload, "sha256").digest()
+        return hmac_new(
+            self._secret(key_id, active.version), payload, "sha256"
+        ).digest()
 
     def verify(self, key_id: str, payload: bytes, signature: bytes) -> bool:
         versions = self.key_store._keys.get(key_id, [])
         for version in versions:
-            if hmac_new(self._secret(key_id, version.version), payload, "sha256").digest() == signature:
+            if (
+                hmac_new(
+                    self._secret(key_id, version.version), payload, "sha256"
+                ).digest()
+                == signature
+            ):
                 return True
         return False
