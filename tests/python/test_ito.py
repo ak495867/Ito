@@ -1,7 +1,4 @@
-import json
-import tempfile
 import unittest
-from pathlib import Path
 
 from replay import Event, validate
 from health import HealthSnapshot
