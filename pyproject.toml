@@ -5,5 +5,8 @@ description = "Ito replay, operations, and backtest utilities"
 requires-python = ">=3.11"
 dependencies = []
 
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests/python"]

@@ -6,7 +6,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOTS = ("apps", "cpp", "rust", "ocaml", "rtl", "python", "tests")
+ROOTS = ("apps", "cpp", "rust", "ocaml", "rtl", "python", "interfaces", "tests")
 EXTENSIONS = {".cpp", ".hpp", ".h", ".rs", ".ml", ".mli", ".sv", ".v", ".py"}
 PATTERNS = {
     ".cpp": re.compile(r"//|/\*|\*/"),

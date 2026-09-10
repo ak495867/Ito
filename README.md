@@ -63,7 +63,7 @@ Ito is designed for engineering development, deterministic simulation, controlle
 | `ocaml` | Policy validation and dynamic circuit-breaker engines |
 | `python` | Backtest, replay, operations, connectivity, reconciliation, portfolio, health, and durable-store utilities |
 | `rtl` | SystemVerilog risk gates, accelerators, bridges, multiplexers, sequencers, rate limiters, and telemetry |
-| `interfaces` | Versioned schemas and generated hardware register-map artifacts |
+| `interfaces` | Venue, custody, recovery, FPGA-evidence, deployment contracts, versioned schemas, and generated hardware register-map artifacts |
 | `config` | Risk, routing, broker, exchange, and deployment profiles; live operation remains disabled by default |
 | `infra` | Container, Compose, systemd, and Prometheus configuration |
 | `scripts` | Build, generation, deployment, benchmarking, recovery, release, evidence, and validation commands |
@@ -350,3 +350,7 @@ Ito is not a recommendation engine, investment adviser, venue-certified gateway,
 ## License and Ownership
 
 No license grant is inferred by this README. Confirm the applicable repository license, third-party dependency terms, data rights, venue agreements, and deployment approvals before distribution or operation.
+
+## Stable Integration Contracts
+
+The `interfaces` package provides stable Python contracts for order gateways, market data, drop-copy feeds, custody, checkpoints, fencing leases, FPGA evidence, and deployment providers. The included implementations are deterministic local simulators that preserve the explicit production boundary: live order submission, production deployment, exported private keys, and claims of certified hardware evidence remain disabled until real providers and external approvals are integrated.

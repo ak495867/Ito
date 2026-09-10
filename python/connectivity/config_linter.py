@@ -12,20 +12,43 @@ def load(path: Path) -> dict[str, object]:
     return value
 
 
+def _mapping_list(
+    value: object, field: str, errors: list[str]
+) -> list[dict[str, object]]:
+    if not isinstance(value, list):
+        errors.append(f"{field}_list_invalid")
+        return []
+    result: list[dict[str, object]] = []
+    for index, item in enumerate(value):
+        if not isinstance(item, dict):
+            errors.append(f"{field}_item_invalid:{index}")
+            continue
+        result.append(item)
+    return result
+
+
 def validate_profiles(paths: list[Path]) -> list[str]:
     errors: list[str] = []
     venue_ids: set[int] = set()
     broker_ids: set[int] = set()
     for path in paths:
-        value = load(path)
+        try:
+            value = load(path)
+        except (OSError, json.JSONDecodeError, ValueError) as error:
+            errors.append(f"profile_invalid:{path}:{type(error).__name__}")
+            continue
         identifier = value.get("venue_id", value.get("broker_id"))
         if not isinstance(identifier, int) or identifier <= 0:
             errors.append(f"identifier_invalid:{path}")
-        if "venue_id" in value:
+        if "venue_id" in value and isinstance(value["venue_id"], int):
             if value["venue_id"] in venue_ids:
                 errors.append(f"duplicate_venue:{value['venue_id']}")
             venue_ids.add(value["venue_id"])
-        if "broker_id" in value and "venue_id" not in value:
+        if (
+            "broker_id" in value
+            and "venue_id" not in value
+            and isinstance(value["broker_id"], int)
+        ):
             if value["broker_id"] in broker_ids:
                 errors.append(f"duplicate_broker:{value['broker_id']}")
             broker_ids.add(value["broker_id"])
@@ -52,14 +75,20 @@ def main() -> int:
     ]
     errors = validate_profiles(paths)
     matrix = load(root / "config/routing/adapter_matrix.json")
-    adapters = matrix.get("adapters", [])
+    adapters = _mapping_list(matrix.get("adapters", []), "adapter", errors)
     adapter_ids = [item.get("adapter_id") for item in adapters]
-    if len(adapter_ids) != len(set(adapter_ids)):
+    if any(not isinstance(value, str) or not value for value in adapter_ids):
+        errors.append("adapter_id_invalid")
+    valid_adapter_ids = [value for value in adapter_ids if isinstance(value, str)]
+    if len(valid_adapter_ids) != len(set(valid_adapter_ids)):
         errors.append("duplicate_adapter_id")
     adapter_venue_ids = [item.get("venue_id") for item in adapters]
     if any(not isinstance(value, int) or value <= 0 for value in adapter_venue_ids):
         errors.append("adapter_venue_invalid")
-    if len(adapter_venue_ids) != len(set(adapter_venue_ids)):
+    valid_adapter_venue_ids = [
+        value for value in adapter_venue_ids if isinstance(value, int)
+    ]
+    if len(valid_adapter_venue_ids) != len(set(valid_adapter_venue_ids)):
         errors.append("duplicate_adapter_venue_id")
     if any(item.get("live_enabled") is not False for item in adapters):
         errors.append("adapter_live_must_be_disabled")
