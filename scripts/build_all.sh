@@ -32,7 +32,7 @@ python3 scripts/check_hardware_response.py build/hardware/risk_response.json
 dune build --root ocaml
 dune exec --root ocaml policy_engine/risk_policy_validator.exe -- config/risk/default_risk_policy.json config/circuit_breakers/default_circuit_breakers.json
 dune exec --root ocaml circuit_breaker/dynamic_engine.exe
-PYTHONPATH=python/replay:python/ops_tools python3 -m unittest discover -s tests/python
+PYTHONPATH=.:python/replay:python/ops_tools:python/connectivity:python/operations:python/reconciliation:python/backtest:python/portfolio:scripts:scripts/operations python3 -m unittest discover -s tests/python
 python3 python/connectivity/config_linter.py
 python3 scripts/run_benchmark_suite.py --branches 4 --messages-per-branch 5000 --venue-adapters exchange-a-sim,exchange-b-sim,broker-a-sim,broker-b-sim --output docs/benchmarks/multibranch_suite.json
 python3 scripts/render_benchmark_suite.py docs/benchmarks/multibranch_suite.json docs/benchmarks

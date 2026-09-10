@@ -1,8 +1,4 @@
-import sys
 import unittest
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parents[2] / "scripts"))
 
 from benchmark_multibranch import branch_samples, summarize
 

@@ -161,6 +161,6 @@ add_custom_target(ito_benchmark
 )
 
 add_custom_target(ito_python_test ALL
-    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/python/replay:${CMAKE_CURRENT_SOURCE_DIR}/python/ops_tools python3 -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}:${CMAKE_CURRENT_SOURCE_DIR}/python/replay:${CMAKE_CURRENT_SOURCE_DIR}/python/ops_tools:${CMAKE_CURRENT_SOURCE_DIR}/python/connectivity:${CMAKE_CURRENT_SOURCE_DIR}/python/operations:${CMAKE_CURRENT_SOURCE_DIR}/python/reconciliation:${CMAKE_CURRENT_SOURCE_DIR}/python/backtest:${CMAKE_CURRENT_SOURCE_DIR}/python/portfolio:${CMAKE_CURRENT_SOURCE_DIR}/scripts:${CMAKE_CURRENT_SOURCE_DIR}/scripts/operations python3 -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )

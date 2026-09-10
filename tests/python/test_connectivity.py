@@ -1,10 +1,5 @@
-import sys
 import unittest
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parents[2] / "python" / "connectivity"))
-sys.path.insert(0, str(Path(__file__).parents[2] / "python" / "reconciliation"))
-sys.path.insert(0, str(Path(__file__).parents[2] / "python" / "operations"))
 
 from config_linter import validate_profiles
 from failover_drill import drill

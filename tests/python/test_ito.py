@@ -1,9 +1,7 @@
+import json
+import tempfile
 import unittest
 from pathlib import Path
-import sys
-
-sys.path.insert(0, str(Path(__file__).parents[2] / "python" / "replay"))
-sys.path.insert(0, str(Path(__file__).parents[2] / "python" / "ops_tools"))
 
 from replay import Event, validate
 from health import HealthSnapshot

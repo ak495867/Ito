@@ -1,19 +1,10 @@
 import hashlib
 import io
 import json
-import sys
 import tarfile
 import tempfile
 import unittest
 from pathlib import Path
-
-root = Path(__file__).parents[2]
-sys.path.insert(0, str(root / "python" / "connectivity"))
-sys.path.insert(0, str(root / "python" / "operations"))
-sys.path.insert(0, str(root / "python" / "replay"))
-sys.path.insert(0, str(root / "python" / "backtest"))
-sys.path.insert(0, str(root / "python" / "portfolio"))
-sys.path.insert(0, str(root / "scripts" / "operations"))
 
 from backup_restore import BackupError, backup, restore
 from durable_store import DurableEventStore, StoreError
@@ -69,7 +60,7 @@ class HardeningTests(unittest.TestCase):
             portfolio.apply_fill(7, -1, 1, 100)
 
     def test_six_external_gates_have_simulation_evidence(self):
-        result = run_gate_simulations(root)
+        result = run_gate_simulations(Path(__file__).parents[2])
         self.assertEqual(result["status"], "passed")
         self.assertTrue(all(result["gates"].values()))
         self.assertEqual(len(result["limitations"]), 5)
