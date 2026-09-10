@@ -5,6 +5,7 @@ root = Path(__file__).parents[2]
 for relative_path in (
     "python/connectivity",
     "python/operations",
+    "python/ops_tools",
     "python/reconciliation",
     "python/replay",
     "python/backtest",
