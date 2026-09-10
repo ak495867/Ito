@@ -17,7 +17,9 @@ class Checkpoint:
 
 
 class CheckpointStore(Protocol):
-    def save(self, name: str, sequence: int, payload: dict[str, object]) -> Checkpoint: ...
+    def save(
+        self, name: str, sequence: int, payload: dict[str, object]
+    ) -> Checkpoint: ...
     def load(self, name: str) -> Checkpoint: ...
     def close(self) -> None: ...
 
@@ -46,7 +48,8 @@ class SQLiteCheckpointStore:
 
     def load(self, name: str) -> Checkpoint:
         row = self.connection.execute(
-            "SELECT sequence, payload, checksum FROM checkpoints WHERE name = ?", (name,)
+            "SELECT sequence, payload, checksum FROM checkpoints WHERE name = ?",
+            (name,),
         ).fetchone()
         if row is None:
             raise KeyError("checkpoint_missing")
@@ -64,5 +67,7 @@ class SQLiteCheckpointStore:
     def __enter__(self) -> "SQLiteCheckpointStore":
         return self
 
-    def __exit__(self, exception_type: object, exception: object, traceback: object) -> None:
+    def __exit__(
+        self, exception_type: object, exception: object, traceback: object
+    ) -> None:
         self.close()

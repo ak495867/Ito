@@ -1,7 +1,6 @@
 import sys
 from pathlib import Path
 
-
 root = Path(__file__).parents[2]
 for relative_path in (
     "python/connectivity",

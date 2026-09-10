@@ -26,7 +26,9 @@ class FrameEvidence:
     timing: TimingEvidence
 
     @classmethod
-    def create(cls, frame_schema: str, frame: bytes, timing: TimingEvidence) -> "FrameEvidence":
+    def create(
+        cls, frame_schema: str, frame: bytes, timing: TimingEvidence
+    ) -> "FrameEvidence":
         if not frame_schema:
             raise ValueError("frame_schema_invalid")
         timing.validate()

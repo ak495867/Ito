@@ -13,7 +13,9 @@ class Lease:
 
 
 class LeaseStore(Protocol):
-    def acquire(self, resource: str, owner_id: str, now_ns: int, ttl_ns: int) -> Lease | None: ...
+    def acquire(
+        self, resource: str, owner_id: str, now_ns: int, ttl_ns: int
+    ) -> Lease | None: ...
     def renew(self, lease: Lease, now_ns: int, ttl_ns: int) -> Lease | None: ...
     def release(self, lease: Lease) -> bool: ...
 
@@ -23,7 +25,9 @@ class InMemoryLeaseStore:
         self._leases: dict[str, Lease] = {}
         self._tokens: dict[str, int] = {}
 
-    def acquire(self, resource: str, owner_id: str, now_ns: int, ttl_ns: int) -> Lease | None:
+    def acquire(
+        self, resource: str, owner_id: str, now_ns: int, ttl_ns: int
+    ) -> Lease | None:
         if not resource or not owner_id or now_ns < 0 or ttl_ns <= 0:
             raise ValueError("lease_request_invalid")
         current = self._leases.get(resource)
@@ -39,7 +43,9 @@ class InMemoryLeaseStore:
         current = self._leases.get(lease.resource)
         if current != lease or now_ns >= lease.expires_at_ns or ttl_ns <= 0:
             return None
-        renewed = Lease(lease.resource, lease.owner_id, lease.fencing_token, now_ns + ttl_ns)
+        renewed = Lease(
+            lease.resource, lease.owner_id, lease.fencing_token, now_ns + ttl_ns
+        )
         self._leases[lease.resource] = renewed
         return renewed
 
