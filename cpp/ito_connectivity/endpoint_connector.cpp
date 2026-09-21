@@ -1,13 +1,20 @@
 #include "endpoint_connector.hpp"
 
 #include <arpa/inet.h>
+#include <cerrno>
+#include <fcntl.h>
 #include <netdb.h>
 #include <openssl/ssl.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
+#include <algorithm>
+#include <chrono>
+#include <memory>
 #include <string>
-#include <utility>
+#include <thread>
+#include <vector>
 
 namespace ito::connectivity {
 
@@ -156,4 +163,17 @@ bool EndpointConnector::connected() const {
     return descriptor_ >= 0;
 }
 
+std::shared_ptr<EndpointConnector> EndpointConnector::acquire(const EndpointConnectorConfig& config) {
+    (void)config;
+    return std::make_shared<EndpointConnector>(config);
 }
+
+void EndpointConnector::release(std::shared_ptr<EndpointConnector> connector) {
+    (void)connector;
+}
+
+std::size_t EndpointConnector::pool_size() {
+    return 0;
+}
+
+} 
