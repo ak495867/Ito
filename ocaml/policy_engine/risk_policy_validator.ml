@@ -36,10 +36,12 @@ let validate_circuit_breaker_policy value now_ns =
   required_int value "policy_version" >>= fun _ ->
   required_int value "expires_at_ns" >>= fun expires_at_ns ->
   if expires_at_ns <= now_ns then Error "policy_expired" else
-  let circuit_breakers = value |> member "breakers" |> to_list in
-  match List.find_opt (fun breaker -> validate_breaker breaker |> Result.is_error) circuit_breakers with
-  | Some breaker -> validate_breaker breaker |> Result.get_error |> fun reason -> Error reason
-  | None -> Ok ()
+  match value |> member "breakers" |> to_list_option with
+  | Some breakers ->
+      match List.find_opt (fun breaker -> validate_breaker breaker |> Result.is_error) breakers with
+      | Some breaker -> validate_breaker breaker |> Result.get_error |> fun reason -> Error reason
+      | None -> Ok ()
+  | None -> Error "breakers_not_list"
 
 let read_json path =
   Yojson.Safe.from_file path

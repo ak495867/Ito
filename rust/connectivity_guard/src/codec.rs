@@ -47,6 +47,9 @@ impl WireFrame {
         expires_at_ns: u64,
         payload: Vec<u8>,
     ) -> Result<Self, CodecError> {
+        if version != SUPPORTED_VERSION {
+            return Err(CodecError::UnsupportedVersion);
+        }
         if payload.len() > MAX_PAYLOAD {
             return Err(CodecError::PayloadTooLarge);
         }

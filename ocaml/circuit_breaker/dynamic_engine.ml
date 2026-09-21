@@ -21,7 +21,9 @@ let install engine rule =
 
 let apply_update engine = function
   | Add rule -> install engine rule
-  | Replace rule -> install engine rule
+  | Replace rule ->
+      if RuleMap.exists rule.identifier engine then install engine rule
+      else engine
   | Remove identifier -> RuleMap.remove identifier engine
 
 let state engine identifier =

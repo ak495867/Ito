@@ -3,7 +3,7 @@
 namespace ito::risk {
 
 bool LimitSnapshotGuard::activate(LimitSnapshot snapshot, std::uint64_t now_ns) {
-    if (snapshot.version == 0 || snapshot.expires_at_ns <= now_ns || snapshot.max_order_quantity <= 0 || snapshot.max_order_notional_ticks <= 0 || snapshot.max_net_position <= 0 || snapshot.max_orders_per_second <= 0) {
+    if (snapshot.version == 0 || snapshot.expires_at_ns <= now_ns || snapshot.max_order_quantity <= 0 || snapshot.max_order_notional_ticks <= 0 || snapshot.max_net_position <= 0 || snapshot.max_orders_per_second <= 0 || !snapshot.trading_enabled) {
         return false;
     }
     if (initialized_ && snapshot.version <= active_.version) {

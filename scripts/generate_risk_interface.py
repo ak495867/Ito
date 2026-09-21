@@ -40,6 +40,12 @@ def validate_registers(
     return frame_bytes, normalized
 
 
+def atomic_write(path: Path, content: str) -> None:
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(content, encoding="utf-8")
+    temporary.replace(path)
+
+
 def main() -> int:
     root = Path(__file__).resolve().parents[1]
     register_map = json.loads(
@@ -71,14 +77,17 @@ def main() -> int:
         "frame_bits": frame_bits,
         "registers": registers,
     }
-    (root / "rust/risk_service/src/generated.rs").write_text(
-        "\n".join(rust_lines) + "\n", encoding="utf-8"
+    atomic_write(
+        root / "rust/risk_service/src/generated.rs",
+        "\n".join(rust_lines) + "\n",
     )
-    (root / "rtl/common/generated/risk_frame_pkg.sv").write_text(
-        "\n".join(sv_lines) + "\n", encoding="utf-8"
+    atomic_write(
+        root / "rtl/common/generated/risk_frame_pkg.sv",
+        "\n".join(sv_lines) + "\n",
     )
-    (root / "interfaces/generated/risk_frame_layout.json").write_text(
-        json.dumps(generated_json, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    atomic_write(
+        root / "interfaces/generated/risk_frame_layout.json",
+        json.dumps(generated_json, indent=2, sort_keys=True) + "\n",
     )
     print("risk_interface_generated")
     return 0

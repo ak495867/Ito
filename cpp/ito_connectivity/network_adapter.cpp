@@ -97,6 +97,7 @@ void NetworkVenueAdapter::decode_reports(std::uint64_t now_ns) {
                 std::string venue;
                 std::getline(fields, venue, '|');
                 reports_.push_back(ExecutionReport{correlation_id, client_order_id, std::stoull(venue), 0, ExecutionStatus::Accepted, 0, 0, pending == pending_.end() ? 0 : pending->second.quantity, now_ns, now_ns, 0});
+                if (pending != pending_.end()) { pending_.erase(client_order_id); }
             } else if (kind == "FILL") {
                 status_ = SessionStatus::Ready;
                 std::string execution;
