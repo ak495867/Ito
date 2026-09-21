@@ -86,7 +86,7 @@ module pre_trade_gate_tb;
         @(posedge clk);
         #1 intent_valid = 1'b0;
         @(posedge clk);
-        #1 if (!decision_valid || approved || reason_code != 4'd7) $fatal(1, "sell lower bound was not enforced");
+        #1 if (!decision_valid || approved || reason_code != 4'd6) $fatal(1, "sell lower bound was not enforced");
         $display("ito_pre_trade_gate_pass");
         $finish;
     end

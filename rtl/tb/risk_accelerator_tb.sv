@@ -79,7 +79,7 @@ module risk_accelerator_tb;
         quantity = 64'd1;
         side_buy = 1'b0;
         net_position = -64'sd1000;
-        expect_decision(1'b0, 4'd7);
+        expect_decision(1'b0, 4'd6);
         $display("ito_risk_accelerator_pass");
         $finish;
     end

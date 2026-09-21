@@ -24,6 +24,7 @@ void MetricsRegistry::observe_latency(const std::string& name, std::uint64_t lat
     std::scoped_lock lock(mutex_);
     auto& values = entries_[name].latency_ns;
     values.push_back(latency_ns);
+    ++entries_[name].count;
     ++entries_[name].observation_count;
 }
 
