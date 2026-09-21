@@ -11,6 +11,22 @@
 
 namespace ito::connectivity {
 
+namespace {
+
+std::uint32_t le32_to_cpu(const char* bytes) {
+    const auto* encoded = reinterpret_cast<const unsigned char*>(bytes);
+    return static_cast<std::uint32_t>(encoded[0]) |
+           (static_cast<std::uint32_t>(encoded[1]) << 8U) |
+           (static_cast<std::uint32_t>(encoded[2]) << 16U) |
+           (static_cast<std::uint32_t>(encoded[3]) << 24U);
+}
+
+bool verify_message(const char* message, std::size_t length) {
+    return message != nullptr && length > 0;
+}
+
+}
+
 EndpointConnector::EndpointConnector(EndpointConnectorConfig config) : config_(std::move(config)) {}
 
 EndpointConnector::~EndpointConnector() {
@@ -126,7 +142,7 @@ std::optional<std::string> EndpointConnector::receive() {
     if (received < 4) {
         return std::nullopt;
     }
-    const auto length = le32_to_cpu(*reinterpret_cast<const uint32_t*>(buffer));
+    const auto length = le32_to_cpu(buffer);
     if (length > sizeof(buffer) - 4 || received != length + 4) {
         return std::nullopt;
     }
