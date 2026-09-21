@@ -53,11 +53,11 @@ module pre_trade_gate #(
             reason_comb = 4'd3;
         end else if (stage_quantity == 0 || stage_quantity > stage_max_quantity) begin
             reason_comb = 4'd4;
-        end else if (stage_price_ticks == 0) begin
-            reason_comb = 4'd5;
         end else if (notional > stage_max_notional_ticks) begin
-            reason_comb = 4'd6;
+            reason_comb = 4'd5;
         end else if (next_position > $signed({1'b0, stage_max_net_position}) || next_position < -$signed({1'b0, stage_max_net_position})) begin
+            reason_comb = 4'd6;
+        end else if (stage_price_ticks == 0) begin
             reason_comb = 4'd7;
         end else begin
             decision_comb = 1'b1;

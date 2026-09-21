@@ -24,7 +24,7 @@ void MetricsRegistry::observe_latency(const std::string& name, std::uint64_t lat
     std::scoped_lock lock(mutex_);
     auto& values = entries_[name].latency_ns;
     values.push_back(latency_ns);
-    ++entries_[name].count;
+    ++entries_[name].observation_count;
 }
 
 MetricSnapshot MetricsRegistry::snapshot(const std::string& name) const {
@@ -40,7 +40,7 @@ MetricSnapshot MetricsRegistry::snapshot(const std::string& name) const {
         const auto index = std::min(values.size() - 1, static_cast<std::size_t>(std::ceil(fraction * static_cast<double>(values.size())) - 1.0));
         return values[index];
     };
-    return MetricSnapshot{found->second.count, found->second.errors, found->second.gauge, pick(0.50), pick(0.99)};
+    return MetricSnapshot{found->second.count, found->second.errors, found->second.observation_count, found->second.gauge, pick(0.50), pick(0.99)};
 }
 
 }

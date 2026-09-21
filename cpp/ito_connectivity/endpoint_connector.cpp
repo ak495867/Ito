@@ -123,7 +123,17 @@ std::optional<std::string> EndpointConnector::receive() {
     if (received <= 0) {
         return std::nullopt;
     }
-    return std::string(buffer, static_cast<std::size_t>(received));
+    if (received < 4) {
+        return std::nullopt;
+    }
+    const auto length = le32_to_cpu(*reinterpret_cast<const uint32_t*>(buffer));
+    if (length > sizeof(buffer) - 4 || received != length + 4) {
+        return std::nullopt;
+    }
+    if (!verify_message(buffer + 4, length)) {
+        return std::nullopt;
+    }
+    return std::string(buffer + 4, static_cast<std::size_t>(length));
 }
 
 bool EndpointConnector::connected() const {

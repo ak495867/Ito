@@ -43,7 +43,7 @@ module order_frame_bridge #(
             risk_max_net_position <= '0;
         end else begin
             risk_request_valid <= frame_valid;
-            if (frame_valid) begin
+            if (frame_valid && (frame_control[7:3] == 5'b0) && (frame_health[7:3] == 5'b0)) begin
                 risk_side_buy <= frame_control[2];
                 risk_trading_enabled <= frame_control[0];
                 risk_halted <= frame_control[1];

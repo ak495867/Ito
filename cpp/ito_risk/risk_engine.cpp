@@ -28,6 +28,9 @@ void RiskEngine::set_limits(protocol::LimitSnapshot limits) {
 
 void RiskEngine::set_position(protocol::PositionSnapshot position) {
     std::scoped_lock lock(mutex_);
+    if (position.gross_position < 0 || position.net_position > position.gross_position || position.net_position < -position.gross_position) {
+        return;
+    }
     position_ = position;
 }
 

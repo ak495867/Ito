@@ -11,6 +11,7 @@ namespace ito::observability {
 struct MetricSnapshot {
     std::uint64_t count{};
     std::uint64_t errors{};
+    std::uint64_t observation_count{};
     std::int64_t gauge{};
     std::uint64_t p50_ns{};
     std::uint64_t p99_ns{};
@@ -27,6 +28,7 @@ public:
 private:
     struct Entry {
         std::uint64_t count{};
+        std::uint64_t observation_count{};
         std::uint64_t errors{};
         std::int64_t gauge{};
         std::vector<std::uint64_t> latency_ns;

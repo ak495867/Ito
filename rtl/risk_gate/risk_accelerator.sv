@@ -58,11 +58,11 @@ module risk_accelerator #(
             reason_comb = 4'd3;
         end else if (stage1_quantity == 0 || stage1_quantity > stage1_max_quantity) begin
             reason_comb = 4'd4;
-        end else if (stage1_price_ticks == 0) begin
-            reason_comb = 4'd5;
         end else if (notional > stage1_max_notional_ticks) begin
-            reason_comb = 4'd6;
+            reason_comb = 4'd5;
         end else if (next_position > $signed({1'b0, stage1_max_net_position}) || next_position < -$signed({1'b0, stage1_max_net_position})) begin
+            reason_comb = 4'd6;
+        end else if (stage1_price_ticks == 0) begin
             reason_comb = 4'd7;
         end else begin
             decision_comb = 1'b1;

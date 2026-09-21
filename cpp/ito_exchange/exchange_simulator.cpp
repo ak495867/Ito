@@ -128,6 +128,7 @@ bool ExchangeSimulator::cancel(std::uint64_t venue_order_id, std::uint64_t times
     }
     remove_from_index(venue_order_id);
     journal_.append(protocol::EventType::Cancel, order.correlation_id, std::to_string(venue_order_id) + ":" + std::to_string(timestamp_ns));
+    journal_.append(protocol::EventType::Acknowledgment, order.correlation_id, "cancel:" + std::to_string(venue_order_id));
     return true;
 }
 
