@@ -3,7 +3,7 @@
 namespace ito::risk {
 
 bool LimitSnapshotGuard::activate(LimitSnapshot snapshot, std::uint64_t now_ns) {
-    if (snapshot.version == 0 || snapshot.expires_at_ns <= now_ns || snapshot.max_order_quantity <= 0 || snapshot.max_order_notional_ticks <= 0 || snapshot.max_net_position <= 0 || snapshot.max_orders_per_second <= 0 || !snapshot.trading_enabled) {
+    if (snapshot.version == 0 || snapshot.expires_ns <= now_ns || snapshot.max_order_quantity <= 0 || snapshot.max_order_notional_ticks <= 0 || snapshot.max_net_position <= 0 || snapshot.max_orders_per_second == 0 || !snapshot.trading_enabled) {
         return false;
     }
     if (initialized_ && snapshot.version <= active_.version) {
@@ -15,7 +15,7 @@ bool LimitSnapshotGuard::activate(LimitSnapshot snapshot, std::uint64_t now_ns) 
 }
 
 bool LimitSnapshotGuard::valid(std::uint64_t now_ns) const {
-    return initialized_ && active_.trading_enabled && active_.expires_at_ns > now_ns;
+    return initialized_ && active_.trading_enabled && active_.expires_ns > now_ns;
 }
 
 const LimitSnapshot& LimitSnapshotGuard::active() const {
@@ -26,7 +26,7 @@ std::string LimitSnapshotGuard::status(std::uint64_t now_ns) const {
     if (!initialized_) {
         return "uninitialized";
     }
-    if (active_.expires_at_ns <= now_ns) {
+    if (active_.expires_ns <= now_ns) {
         return "expired";
     }
     if (!active_.trading_enabled) {

@@ -66,9 +66,8 @@ bool RiskEngine::apply_fill(protocol::Side side, std::int64_t quantity) {
 }
 
 protocol::RiskDecision RiskEngine::reject(std::uint64_t correlation_id, std::uint64_t now_ns, std::uint16_t reason) {
-    const protocol::RiskDecision decision{journal_.next_sequence(), correlation_id, limits_.version, protocol::RiskStatus::Rejected, reason, now_ns};
-    journal_.append(protocol::EventType::RiskDecision, correlation_id, std::to_string(reason));
-    return decision;
+    const auto event_id = journal_.append(protocol::EventType::RiskDecision, correlation_id, std::to_string(reason));
+    return protocol::RiskDecision{event_id, correlation_id, limits_.version, protocol::RiskStatus::Rejected, reason, now_ns};
 }
 
 protocol::RiskDecision RiskEngine::evaluate(const protocol::OrderIntent& intent, std::uint64_t now_ns) {

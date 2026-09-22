@@ -1,20 +1,13 @@
 #pragma once
 
+#include "../../interfaces/schemas/ito_protocol.hpp"
+
 #include <cstdint>
 #include <string>
 
 namespace ito::risk {
 
-struct LimitSnapshot {
-    std::uint64_t version{};
-    std::uint64_t expires_at_ns{};
-    std::int64_t max_order_quantity{};
-    std::int64_t max_order_notional_ticks{};
-    std::int64_t max_net_position{};
-    std::int64_t max_orders_per_second{};
-    bool trading_enabled{};
-    bool fail_closed{true};
-};
+using LimitSnapshot = protocol::LimitSnapshot;
 
 class LimitSnapshotGuard {
 public:

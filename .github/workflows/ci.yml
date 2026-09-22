@@ -44,6 +44,8 @@ jobs:
           set -e
           test "$status" -eq 1
           grep -q '"status": "not_production_ready"' readiness.json
+      - name: Run Python unit test suite
+        run: python -m unittest discover -s tests/python
 
   rust:
     name: Rust checks on ${{ matrix.os }}

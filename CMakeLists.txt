@@ -95,6 +95,10 @@ add_executable(ito_reconciliation_tests tests/failover/test_reconciliation.cpp)
 target_link_libraries(ito_reconciliation_tests PRIVATE ito_reconciliation ito_connectivity ito_exchange ito_core ito_common)
 add_test(NAME ito_reconciliation_tests COMMAND ito_reconciliation_tests)
 
+add_executable(ito_socket_integration_tests tests/connectivity/test_socket_integration.cpp)
+target_link_libraries(ito_socket_integration_tests PRIVATE ito_connectivity ito_common)
+add_test(NAME ito_socket_integration_tests COMMAND ito_socket_integration_tests)
+
 add_custom_target(ito_generate_risk_interface ALL
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_risk_interface.py
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

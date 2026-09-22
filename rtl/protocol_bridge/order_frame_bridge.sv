@@ -26,6 +26,9 @@ module order_frame_bridge #(
     output logic signed [WIDTH-1:0] risk_net_position,
     output logic [WIDTH-1:0] risk_max_net_position
 );
+    logic frame_parity_ok;
+    assign frame_parity_ok = (frame_control[7:3] == 5'b0) && (frame_health[7:3] == 5'b0);
+
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             risk_request_valid <= 1'b0;
@@ -42,8 +45,8 @@ module order_frame_bridge #(
             risk_net_position <= '0;
             risk_max_net_position <= '0;
         end else begin
-            risk_request_valid <= frame_valid;
-            if (frame_valid && (frame_control[7:3] == 5'b0) && (frame_health[7:3] == 5'b0)) begin
+            risk_request_valid <= frame_valid && frame_parity_ok;
+            if (frame_valid && frame_parity_ok) begin
                 risk_side_buy <= frame_control[2];
                 risk_trading_enabled <= frame_control[0];
                 risk_halted <= frame_control[1];
