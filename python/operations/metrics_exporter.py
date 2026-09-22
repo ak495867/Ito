@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Prometheus HTTP Metrics Exporter for Ito System Telemetry."""
 
 import http.server

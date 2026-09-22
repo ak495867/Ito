@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Automated Order Uncertainty Reconciliation Tool based on order-uncertainty.md runbook."""
 
 import argparse
