@@ -17,9 +17,6 @@ target_link_libraries(ito_protocol INTERFACE ito_common)
 add_library(ito_core STATIC cpp/ito_core/event.cpp)
 target_link_libraries(ito_core PUBLIC ito_common)
 
-add_library(ito_reference STATIC cpp/ito_reference/journal_file.cpp)
-target_link_libraries(ito_reference PUBLIC ito_core ito_common)
-
 add_library(ito_journal STATIC cpp/ito_journal/journal_file.cpp)
 target_link_libraries(ito_journal PUBLIC ito_core ito_common)
 
@@ -81,9 +78,7 @@ add_test(NAME ito_core_tests COMMAND ito_core_tests)
 add_executable(ito_journal_file_tests tests/cpp/test_journal_file.cpp)
 target_link_libraries(ito_journal_file_tests PRIVATE ito_journal ito_core ito_common)
 add_test(NAME ito_journal_file_tests COMMAND ito_journal_file_tests)
-add_executable(ito_reference_tests tests/cpp/test_reference.cpp)
-target_link_libraries(ito_reference_tests PRIVATE ito_reference ito_core ito_common)
-add_test(NAME ito_reference_tests COMMAND ito_reference_tests)
+
 add_executable(ito_exchange_tests tests/exchange/test_exchange.cpp)
 target_link_libraries(ito_exchange_tests PRIVATE ito_exchange ito_core ito_common)
 add_test(NAME ito_exchange_tests COMMAND ito_exchange_tests)

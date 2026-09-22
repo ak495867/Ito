@@ -59,11 +59,21 @@ std::optional<protocol::ExecutionEvent> ExecutionEngine::submit(const protocol::
         return std::nullopt;
     }
     if (halted_ || gateway_state_ != GatewayState::Ready) {
+        circuit_failures_++;
+        if (circuit_failures_ >= kCircuitFailureThreshold) {
+            circuit_state_ = CircuitState::Open;
+            circuit_opened_at_ns_ = now_ns;
+        }
         journal_.append(protocol::EventType::OrderSent, intent.correlation_id, std::to_string(kGatewayUnavailable));
         return std::nullopt;
     }
     const auto decision = risk_engine_.evaluate(intent, now_ns);
     if (decision.status != protocol::RiskStatus::Approved) {
+        circuit_failures_++;
+        if (circuit_failures_ >= kCircuitFailureThreshold) {
+            circuit_state_ = CircuitState::Open;
+            circuit_opened_at_ns_ = now_ns;
+        }
         journal_.append(protocol::EventType::OrderSent, intent.correlation_id, std::to_string(kRiskRejected));
         return std::nullopt;
     }
@@ -81,6 +91,11 @@ bool ExecutionEngine::acknowledge(std::uint64_t correlation_id, std::uint64_t ve
     const auto it = active_.find(correlation_id);
     if (it == active_.end() || it->second.venue_order_id != venue_order_id) {
         gateway_state_ = GatewayState::Uncertain;
+        circuit_failures_++;
+        if (circuit_failures_ >= kCircuitFailureThreshold) {
+            circuit_state_ = CircuitState::Open;
+            circuit_opened_at_ns_ = now_ns;
+        }
         journal_.append(protocol::EventType::Acknowledgment, correlation_id, "uncertain");
         return false;
     }
@@ -93,6 +108,7 @@ bool ExecutionEngine::acknowledge(std::uint64_t correlation_id, std::uint64_t ve
         circuit_opened_at_ns_ = 0;
         half_open_in_flight_ = false;
     }
+    active_.erase(it);
     return true;
 }
 

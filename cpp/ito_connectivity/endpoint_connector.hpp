@@ -33,8 +33,6 @@ struct EndpointConnectorConfig {
 
 class EndpointConnector {
 public:
-    class ConnectionPool;
-
     explicit EndpointConnector(EndpointConnectorConfig config);
     ~EndpointConnector();
     EndpointConnector(const EndpointConnector&) = delete;
@@ -45,10 +43,6 @@ public:
     std::optional<std::string> receive();
     bool connected() const;
     std::uint64_t last_error_code() const;
-
-    static std::shared_ptr<EndpointConnector> acquire(const EndpointConnectorConfig& config);
-    static void release(std::shared_ptr<EndpointConnector> connector);
-    static std::size_t pool_size();
 
 private:
     bool attempt_connect();

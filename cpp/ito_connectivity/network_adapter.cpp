@@ -9,6 +9,18 @@ namespace {
 std::string side_name(protocol::Side side) {
     return side == protocol::Side::Buy ? "B" : "S";
 }
+
+std::string pack_framed_message(const std::string& payload) {
+    std::uint32_t length = static_cast<std::uint32_t>(payload.size());
+    std::string wire;
+    wire.reserve(4 + payload.size());
+    wire.push_back(static_cast<char>(length & 0xFF));
+    wire.push_back(static_cast<char>((length >> 8) & 0xFF));
+    wire.push_back(static_cast<char>((length >> 16) & 0xFF));
+    wire.push_back(static_cast<char>((length >> 24) & 0xFF));
+    wire += payload;
+    return wire;
+}
 }
 
 NetworkVenueAdapter::NetworkVenueAdapter(SessionConfig session, EndpointConnectorConfig endpoint)
@@ -57,7 +69,7 @@ std::optional<ExecutionReport> NetworkVenueAdapter::submit(const NormalizedOrder
     if (order.client_order_id == 0 || order.correlation_id == 0 || order.quantity <= 0 || status_ != SessionStatus::Ready || pending_.contains(order.client_order_id)) {
         return std::nullopt;
     }
-    if (!connector_.send(encode_order(order))) {
+    if (!connector_.send(pack_framed_message(encode_order(order)))) {
         status_ = SessionStatus::Degraded;
         return std::nullopt;
     }
@@ -67,7 +79,7 @@ std::optional<ExecutionReport> NetworkVenueAdapter::submit(const NormalizedOrder
 }
 
 std::optional<ExecutionReport> NetworkVenueAdapter::cancel(std::uint64_t client_order_id, std::uint64_t now_ns) {
-    if (client_order_id == 0 || status_ == SessionStatus::Disabled || status_ == SessionStatus::Degraded || !pending_.contains(client_order_id) || !connector_.send(encode_cancel(client_order_id))) {
+    if (client_order_id == 0 || status_ == SessionStatus::Disabled || status_ == SessionStatus::Degraded || !pending_.contains(client_order_id) || !connector_.send(pack_framed_message(encode_cancel(client_order_id)))) {
         status_ = SessionStatus::Uncertain;
         return std::nullopt;
     }

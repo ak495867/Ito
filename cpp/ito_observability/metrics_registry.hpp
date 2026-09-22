@@ -1,10 +1,10 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <map>
 #include <mutex>
 #include <string>
-#include <vector>
 
 namespace ito::observability {
 
@@ -31,7 +31,7 @@ private:
         std::uint64_t observation_count{};
         std::uint64_t errors{};
         std::int64_t gauge{};
-        std::vector<std::uint64_t> latency_ns;
+        std::array<std::uint64_t, 64> buckets{};
     };
     mutable std::mutex mutex_;
     std::map<std::string, Entry> entries_;

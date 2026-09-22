@@ -40,67 +40,7 @@ bool verify_message(const char* message, std::size_t length) {
 
 }
 
-class EndpointConnector::ConnectionPool {
-public:
-    explicit ConnectionPool(const EndpointConnectorConfig& config)
-        : config_(config) {}
-
-    std::shared_ptr<EndpointConnector> acquire() {
-        std::scoped_lock lock(mutex_);
-        while (!available_.empty()) {
-            auto it = available_.front();
-            available_.pop_front();
-            in_use_.insert(it);
-            if (it->connected()) {
-                return it;
-            }
-        }
-        if (active_.size() >= config_.max_connections) {
-            return nullptr;
-        }
-        auto connector = std::make_shared<EndpointConnector>(config_);
-        active_.insert(connector);
-        in_use_.insert(connector);
-        if (connector->open()) {
-            return connector;
-        }
-        active_.erase(connector);
-        return nullptr;
-    }
-
-    void release(std::shared_ptr<EndpointConnector> connector) {
-        std::scoped_lock lock(mutex_);
-        in_use_.erase(connector);
-        if (connector && connector->connected()) {
-            available_.push_back(connector);
-        } else {
-            active_.erase(connector);
-            if (connector) {
-                auto fresh = std::make_shared<EndpointConnector>(config_);
-                active_.insert(fresh);
-            }
-        }
-    }
-
-    std::size_t size() const {
-        std::scoped_lock lock(mutex_);
-        return active_.size();
-    }
-
-    std::size_t available() const {
-        std::scoped_lock lock(mutex_);
-        return available_.size();
-    }
-
-private:
-    EndpointConnectorConfig config_;
-    mutable std::mutex mutex_;
-    std::unordered_set<std::shared_ptr<EndpointConnector>> active_;
-    std::unordered_set<std::shared_ptr<EndpointConnector>> in_use_;
-    std::deque<std::shared_ptr<EndpointConnector>> available_;
-};
-
-static thread_local std::shared_ptr<EndpointConnector::ConnectionPool> g_pool;
+}
 
 EndpointConnector::EndpointConnector(EndpointConnectorConfig config) : config_(std::move(config)) {}
 
@@ -259,26 +199,6 @@ bool EndpointConnector::connected() const {
 
 std::uint64_t EndpointConnector::last_error_code() const {
     return last_error_code_;
-}
-
-std::shared_ptr<EndpointConnector> EndpointConnector::acquire(const EndpointConnectorConfig& config) {
-    if (!g_pool) {
-        g_pool = std::make_shared<ConnectionPool>(config);
-    }
-    return g_pool->acquire();
-}
-
-void EndpointConnector::release(std::shared_ptr<EndpointConnector> connector) {
-    if (g_pool) {
-        g_pool->release(connector);
-    }
-}
-
-std::size_t EndpointConnector::pool_size() {
-    if (g_pool) {
-        return g_pool->size();
-    }
-    return 0;
 }
 
 bool EndpointConnector::attempt_connect() {

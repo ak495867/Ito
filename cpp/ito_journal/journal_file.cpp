@@ -7,29 +7,35 @@
 #include <utility>
 
 namespace {
-std::string escape_json(const std::string& value) {
-    std::string escaped;
-    escaped.reserve(value.size());
-    for (const auto character : value) {
+void write_escaped_json(std::ostream& stream, const std::string& value) {
+    bool needs_escape = false;
+    for (const char c : value) {
+        if (c == '\\' || c == '"' || static_cast<unsigned char>(c) < 0x20) {
+            needs_escape = true;
+            break;
+        }
+    }
+    if (!needs_escape) {
+        stream << value;
+        return;
+    }
+    for (const char character : value) {
         switch (character) {
-            case '\\': escaped += "\\\\"; break;
-            case '"': escaped += "\\\""; break;
-            case '\b': escaped += "\\b"; break;
-            case '\f': escaped += "\\f"; break;
-            case '\n': escaped += "\\n"; break;
-            case '\r': escaped += "\\r"; break;
-            case '\t': escaped += "\\t"; break;
+            case '\\': stream << "\\\\"; break;
+            case '"': stream << "\\\""; break;
+            case '\b': stream << "\\b"; break;
+            case '\f': stream << "\\f"; break;
+            case '\n': stream << "\\n"; break;
+            case '\r': stream << "\\r"; break;
+            case '\t': stream << "\\t"; break;
             default:
                 if (static_cast<unsigned char>(character) < 0x20) {
-                    std::ostringstream code;
-                    code << "\\\\u00" << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(character));
-                    escaped += code.str();
+                    stream << "\\u00" << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(character)) << std::dec;
                 } else {
-                    escaped.push_back(character);
+                    stream.put(character);
                 }
         }
     }
-    return escaped;
 }
 }
 
@@ -60,7 +66,9 @@ bool JournalFile::append(const protocol::EventEnvelope& event) {
     if (!stream_.good() || event.sequence != last_sequence_ + 1) {
         return false;
     }
-    stream_ << "{\"event_id\":" << event.event_id << ",\"sequence\":" << event.sequence << ",\"event_type\":" << static_cast<unsigned>(event.type) << ",\"payload\":\"" << escape_json(event.payload) << "\"}\n";
+    stream_ << "{\"event_id\":" << event.event_id << ",\"sequence\":" << event.sequence << ",\"event_type\":" << static_cast<unsigned>(event.type) << ",\"payload\":\"";
+    write_escaped_json(stream_, event.payload);
+    stream_ << "\"}\n";
     stream_.flush();
     if (!stream_.good()) {
         return false;

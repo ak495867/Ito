@@ -36,18 +36,14 @@ module risk_accelerator #(
     logic [WIDTH-1:0] stage1_max_notional_ticks;
     logic signed [WIDTH-1:0] stage1_net_position;
     logic [WIDTH-1:0] stage1_max_net_position;
-    logic [2*WIDTH-1:0] notional;
-    logic signed [WIDTH:0] signed_quantity;
-    logic signed [WIDTH:0] next_position;
+    logic [2*WIDTH-1:0] stage1_notional;
+    logic signed [WIDTH:0] stage1_next_position;
     logic decision_comb;
     logic [3:0] reason_comb;
 
     assign request_ready = !stage1_valid || response_valid;
 
     always_comb begin
-        notional = stage1_price_ticks * stage1_quantity;
-        signed_quantity = stage1_side_buy ? $signed({1'b0, stage1_quantity}) : -$signed({1'b0, stage1_quantity});
-        next_position = $signed({stage1_net_position[WIDTH-1], stage1_net_position}) + signed_quantity;
         decision_comb = 1'b0;
         reason_comb = 4'd0;
         if (!stage1_trading_enabled || stage1_halted) begin
@@ -58,9 +54,9 @@ module risk_accelerator #(
             reason_comb = 4'd3;
         end else if (stage1_quantity == 0 || stage1_quantity > stage1_max_quantity) begin
             reason_comb = 4'd4;
-        end else if (notional > stage1_max_notional_ticks) begin
+        end else if (stage1_notional > stage1_max_notional_ticks) begin
             reason_comb = 4'd5;
-        end else if (next_position > $signed({1'b0, stage1_max_net_position}) || next_position < -$signed({1'b0, stage1_max_net_position})) begin
+        end else if (stage1_next_position > $signed({1'b0, stage1_max_net_position}) || stage1_next_position < -$signed({1'b0, stage1_max_net_position})) begin
             reason_comb = 4'd6;
         end else if (stage1_price_ticks == 0) begin
             reason_comb = 4'd7;
@@ -75,6 +71,8 @@ module risk_accelerator #(
             response_valid <= 1'b0;
             approved <= 1'b0;
             reason_code <= 4'd1;
+            stage1_notional <= '0;
+            stage1_next_position <= '0;
         end else begin
             response_valid <= stage1_valid;
             if (stage1_valid) begin
@@ -95,6 +93,8 @@ module risk_accelerator #(
                 stage1_max_notional_ticks <= max_notional_ticks;
                 stage1_net_position <= net_position;
                 stage1_max_net_position <= max_net_position;
+                stage1_notional <= price_ticks * quantity;
+                stage1_next_position <= $signed({net_position[WIDTH-1], net_position}) + (side_buy ? $signed({1'b0, quantity}) : -$signed({1'b0, quantity}));
             end
         end
     end
