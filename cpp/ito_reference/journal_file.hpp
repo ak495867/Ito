@@ -30,6 +30,8 @@ private:
     bool read_header();
     bool verify_integrity() const;
 
+    std::string path_;
+    mutable std::mutex mutex_;
     mutable std::fstream stream_;
     std::uint64_t last_sequence_{0};
     bool initialized_{false};
