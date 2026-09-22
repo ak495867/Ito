@@ -40,8 +40,6 @@ bool verify_message(const char* message, std::size_t length) {
 
 }
 
-}
-
 EndpointConnector::EndpointConnector(EndpointConnectorConfig config) : config_(std::move(config)) {}
 
 EndpointConnector::~EndpointConnector() {

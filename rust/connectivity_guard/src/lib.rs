@@ -194,14 +194,14 @@ impl RateStats {
 }
 
 pub struct ConnectivityLogger {
-    audit_file: Option<std::fs::File>,
+    _audit_file: Option<std::fs::File>,
     rate_stats: Mutex<RateStats>,
 }
 
 impl ConnectivityLogger {
     pub fn new(audit_path: &str) -> Self {
         let rate_stats = Mutex::new(RateStats::new());
-        let audit_file = if !audit_path.is_empty() {
+        let _audit_file = if !audit_path.is_empty() {
             std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
@@ -211,7 +211,7 @@ impl ConnectivityLogger {
             None
         };
         ConnectivityLogger {
-            audit_file,
+            _audit_file,
             rate_stats,
         }
     }
@@ -288,7 +288,6 @@ pub fn shutdown_audit_logger() {
     let mut guard = AUDIT_LOG.lock().unwrap();
     if let Some(ref file) = *guard {
         let _ = file.sync_all();
-        drop(file);
     }
     *guard = None;
 }
