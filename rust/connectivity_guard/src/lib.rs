@@ -3,11 +3,11 @@ pub mod codec;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fmt;
+use std::io::Write;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Global audit logger for connectivity events
 static AUDIT_LOG: std::sync::Mutex<Option<std::fs::File>> = std::sync::Mutex::new(None);
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -51,7 +51,6 @@ pub enum AuthorizationFailure {
     LeaseExpired,
     LeaseOwnerMismatch,
     RateExceeded,
-    // New comprehensive failures
     JsonParseError,
     ConfigMissing,
     TlsHandshakeFailed,
@@ -84,11 +83,11 @@ impl fmt::Display for AuthorizationFailure {
         }
     }
 }
+ 
 
-/// Unique event ID generator
 static EVENT_ID: AtomicU64 = AtomicU64::new(1);
 
-/// Audit log entry structure
+
 #[derive(Clone, Debug, Serialize)]
 pub struct AuditEntry {
     pub event_id: u64,
@@ -218,11 +217,6 @@ impl ConnectivityLogger {
     }
 
     pub fn log_event(&self, event: &ConnectionEvent) {
-        let event_id = EVENT_ID.fetch_add(1, Ordering::Relaxed);
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos() as u64;
         let details = match event {
             ConnectionEvent::ConnectAttempt { host, port, success } => {
                 format!("connect_attempt:{} {} {}", host, port, success)
@@ -256,7 +250,6 @@ impl ConnectivityLogger {
     }
 }
 
-/// Initialize global audit logging
 pub fn init_audit_logger(audit_path: &str) -> Result<(), std::io::Error> {
     let mut guard = AUDIT_LOG.lock().unwrap();
     if (*guard).is_none() {
@@ -268,7 +261,6 @@ pub fn init_audit_logger(audit_path: &str) -> Result<(), std::io::Error> {
     Ok(())
 }
 
-/// Shutdown global audit logging
 pub fn shutdown_audit_logger() {
     let mut guard = AUDIT_LOG.lock().unwrap();
     if let Some(ref file) = *guard {
@@ -322,7 +314,6 @@ impl VenueStats {
     }
 }
 
-/// Authorize a venue session against permission, lease, and rate limits
 pub fn authorize(
     permission: &VenuePermission,
     lease: &SessionLease,
@@ -367,7 +358,6 @@ pub fn authorize(
     Ok(())
 }
 
-/// Compute a SHA-256 digest of a session lease for audit trails
 pub fn lease_digest(lease: &SessionLease) -> String {
     let bytes = serde_json::to_vec(lease).unwrap_or_default();
     let mut hasher = Sha256::new();
@@ -379,12 +369,11 @@ pub fn lease_digest(lease: &SessionLease) -> String {
         .collect()
 }
 
-/// Compute a SHA-256 digest of an audit entry for tamper-evidence
 pub fn audit_digest(entry: &AuditEntry) -> String {
     let mut hasher = Sha256::new();
     hasher.update(format!(
         "{}:{}:{}:{}:{}:{}",
-        entry.timestamp_ns, entry.venue_id, entry.branch_id, entry.entity_id, entry.correlation_id, entry.sequence
+        entry.event_id, entry.timestamp_ns, entry.event_type, entry.details
     )
     .as_bytes());
     hasher
