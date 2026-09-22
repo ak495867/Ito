@@ -23,9 +23,10 @@ int main() {
     engine.set_halted(false);
     const auto sent = engine.submit(intent, 2'000'000'000ULL);
     assert(sent.has_value());
+    assert(engine.events().size() == 1);
     assert(engine.acknowledge(intent.correlation_id, sent->venue_order_id, 2'000'000'100ULL));
     assert(!engine.acknowledge(999, 999, 2'000'000'200ULL));
-    assert(engine.events().size() == 1);
+    assert(engine.events().size() == 0);
     assert(journal.snapshot().size() >= 4);
     return 0;
 }

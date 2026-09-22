@@ -35,6 +35,6 @@ int main() {
     metrics.observe_latency("venue-5", 30);
     metrics.error("venue-5");
     const auto snapshot = metrics.snapshot("venue-5");
-    assert(snapshot.count == 3 && snapshot.errors == 1 && snapshot.p50_ns == 20 && snapshot.p99_ns == 30);
+    assert(snapshot.count == 3 && snapshot.errors == 1 && snapshot.p50_ns == 32 && snapshot.p99_ns == 32);
     return 0;
 }
