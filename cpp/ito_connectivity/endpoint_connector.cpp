@@ -47,7 +47,6 @@ public:
 
     std::shared_ptr<EndpointConnector> acquire() {
         std::scoped_lock lock(mutex_);
-        auto now = std::chrono::steady_clock::now();
         while (!available_.empty()) {
             auto it = available_.front();
             available_.pop_front();
