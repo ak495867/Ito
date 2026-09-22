@@ -7,24 +7,35 @@
 #include <thread>
 
 int main() {
-    ito::connectivity::SessionConfig session{
-        ito::connectivity::VenueIdentity{5, 1},
-        1001,
-        false
-    };
-    ito::connectivity::EndpointConnectorConfig endpoint{
-        "127.0.0.1",
-        12345,
-        false,
-        false
-    };
+    ito::connectivity::VenueIdentity venue_id{};
+    venue_id.venue_id = 5;
+    venue_id.broker_id = 1;
+
+    ito::connectivity::SessionConfig session{};
+    session.branch_id = 1001;
+    session.venue = venue_id;
+    session.live_enabled = false;
+
+    ito::connectivity::EndpointConnectorConfig endpoint{};
+    endpoint.host = "127.0.0.1";
+    endpoint.port = 12345;
+    endpoint.tls_required = false;
+    endpoint.live_enabled = false;
 
     ito::connectivity::NetworkVenueAdapter adapter(session, endpoint);
     assert(adapter.status() == ito::connectivity::SessionStatus::Disabled);
 
-    ito::connectivity::NormalizedOrder order{
-        1, 100, 1001, 1, 7, 50, 100, ito::protocol::Side::Buy, ito::protocol::OrderType::Limit
-    };
+    ito::connectivity::NormalizedOrder order{};
+    order.correlation_id = 1;
+    order.client_order_id = 100;
+    order.instrument_id = 1001;
+    order.account_id = 1;
+    order.side = ito::protocol::Side::Buy;
+    order.order_type = ito::protocol::OrderType::Limit;
+    order.time_in_force = ito::protocol::TimeInForce::Day;
+    order.price_ticks = 50;
+    order.quantity = 100;
+    order.strategy_id = 7;
 
     auto report = adapter.submit(order, 1000);
     assert(!report.has_value());
