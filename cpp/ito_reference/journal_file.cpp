@@ -15,11 +15,13 @@ constexpr std::uint32_t kCurrentVersion = 1;
 
 JournalFile::JournalFile(const std::string& path) : path_(path) {
     std::filesystem::create_directories(std::filesystem::path(path).parent_path());
-    stream_.open(path, std::ios::binary | std::ios::in | std::ios::out | std::ios::app);
+    stream_.open(path, std::ios::binary | std::ios::in | std::ios::out);
     if (!stream_.is_open()) {
         stream_.open(path, std::ios::binary | std::ios::out | std::ios::trunc);
         if (stream_.is_open()) {
             write_header();
+            stream_.close();
+            stream_.open(path, std::ios::binary | std::ios::in | std::ios::out);
         }
     } else {
         read_header();
