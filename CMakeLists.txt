@@ -11,8 +11,14 @@ add_library(ito_common INTERFACE)
 target_include_directories(ito_common INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/cpp)
 target_compile_options(ito_common INTERFACE -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror)
 
+add_library(ito_protocol INTERFACE)
+target_link_libraries(ito_protocol INTERFACE ito_common)
+
 add_library(ito_core STATIC cpp/ito_core/event.cpp)
 target_link_libraries(ito_core PUBLIC ito_common)
+
+add_library(ito_reference STATIC cpp/ito_reference/journal_file.cpp)
+target_link_libraries(ito_reference PUBLIC ito_core ito_common)
 
 add_library(ito_journal STATIC cpp/ito_journal/journal_file.cpp)
 target_link_libraries(ito_journal PUBLIC ito_core ito_common)
@@ -75,6 +81,9 @@ add_test(NAME ito_core_tests COMMAND ito_core_tests)
 add_executable(ito_journal_file_tests tests/cpp/test_journal_file.cpp)
 target_link_libraries(ito_journal_file_tests PRIVATE ito_journal ito_core ito_common)
 add_test(NAME ito_journal_file_tests COMMAND ito_journal_file_tests)
+add_executable(ito_reference_tests tests/cpp/test_reference.cpp)
+target_link_libraries(ito_reference_tests PRIVATE ito_reference ito_core ito_common)
+add_test(NAME ito_reference_tests COMMAND ito_reference_tests)
 add_executable(ito_exchange_tests tests/exchange/test_exchange.cpp)
 target_link_libraries(ito_exchange_tests PRIVATE ito_exchange ito_core ito_common)
 add_test(NAME ito_exchange_tests COMMAND ito_exchange_tests)
@@ -148,6 +157,21 @@ add_custom_target(ito_rtl_accelerator_test ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/build/rtl
     COMMAND iverilog -g2012 -o ${CMAKE_CURRENT_SOURCE_DIR}/build/rtl/ito_risk_accelerator_tb ${CMAKE_CURRENT_SOURCE_DIR}/rtl/common/generated/risk_frame_pkg.sv ${CMAKE_CURRENT_SOURCE_DIR}/rtl/risk_gate/risk_accelerator.sv ${CMAKE_CURRENT_SOURCE_DIR}/rtl/tb/risk_accelerator_tb.sv
     COMMAND vvp ${CMAKE_CURRENT_SOURCE_DIR}/build/rtl/ito_risk_accelerator_tb
+    DEPENDS ito_generate_risk_interface
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_custom_target(ito_rtl_fault_injection_test ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/build/rtl
+    COMMAND iverilog -g2012 -o ${CMAKE_CURRENT_SOURCE_DIR}/build/rtl/ito_fault_tb ${CMAKE_CURRENT_SOURCE_DIR}/rtl/common/ito_types.sv ${CMAKE_CURRENT_SOURCE_DIR}/rtl/risk_gate/pre_trade_gate.sv ${CMAKE_CURRENT_SOURCE_DIR}/rtl/tb/pre_trade_gate_fault_injection_tb.sv
+    COMMAND vvp ${CMAKE_CURRENT_SOURCE_DIR}/build/rtl/ito_fault_tb
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_custom_target(ito_rtl_timing_test ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/build/rtl
+    COMMAND iverilog -g2012 -o ${CMAKE_CURRENT_SOURCE_DIR}/build/rtl/ito_timing_tb ${CMAKE_CURRENT_SOURCE_DIR}/rtl/common/generated/risk_frame_pkg.sv ${CMAKE_CURRENT_SOURCE_DIR}/rtl/risk_gate/risk_accelerator.sv ${CMAKE_CURRENT_SOURCE_DIR}/rtl/tb/risk_accelerator_timing_tb.sv
+    COMMAND vvp ${CMAKE_CURRENT_SOURCE_DIR}/build/rtl/ito_timing_tb
     DEPENDS ito_generate_risk_interface
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )

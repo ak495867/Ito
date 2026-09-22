@@ -1,36 +1,42 @@
 open Yojson.Safe.Util
 
-let ( >>= ) = Result.bind
+type scope = Strategy | Venue | Branch | Group
+type state = Closed | Open | HalfOpen
 
-let required_string object_value key =
-  match object_value |> member key |> to_string_option with
-  | Some value when String.length value > 0 -> Ok value
-  | _ -> Error (key ^ "_missing")
+type rule = {
+  identifier : string;
+  scope : scope;
+  threshold : int64;
+  cooldown_ns : int64;
+  manual_clear : bool;
+}
 
-let required_int object_value key =
-  try
-    let value = object_value |> member key |> to_int |> Int64.of_int in
-    if value > 0L then Ok value else Error (key ^ "_invalid")
-  with Type_error _ -> Error (key ^ "_missing")
+type runtime = {
+  rule : rule;
+  state : state;
+  violations : int64;
+  opened_at_ns : int64;
+  trips : int64;
+}
 
-let validate_breaker breaker =
+type policy_update = Add of rule | Replace of rule | Remove of string
+
+let empty = RuleMap.empty
+
+module RuleMap = Map.Make(String)
+
+let saturating_add left right =
+  if Int64.compare right 0L > 0 && Int64.compare left (Int64.sub Int64.max_int right) > 0 then Int64.max_int
+  else if Int64.compare right 0L < 0 && Int64.compare left (Int64.sub Int64.min_int right) < 0 then Int64.min_int
+  else Int64.add left right
+
+let validate_breaker_json breaker =
   required_string breaker "id" >>= fun _ ->
   required_string breaker "scope" >>= fun _ ->
   required_string breaker "trigger" >>= fun _ ->
   required_int breaker "threshold" >>= fun _ ->
   required_string breaker "action" >>= fun _ ->
   required_string breaker "recovery"
-
-let validate_risk_policy value now_ns =
-  required_int value "policy_version" >>= fun _ ->
-  required_int value "expires_at_ns" >>= fun expires_at_ns ->
-  if expires_at_ns <= now_ns then Error "policy_expired" else
-  let pre_trade = value |> member "pre_trade" in
-  required_int pre_trade "max_order_quantity" >>= fun _ ->
-  required_int pre_trade "max_order_notional_ticks" >>= fun _ ->
-  required_int pre_trade "max_net_position" >>= fun _ ->
-  required_int pre_trade "max_orders_per_second" >>= fun _ ->
-  Ok ()
 
 let validate_circuit_breaker_policy value now_ns =
   required_int value "policy_version" >>= fun _ ->
@@ -43,24 +49,43 @@ let validate_circuit_breaker_policy value now_ns =
     | None -> Ok ()
   with Type_error _ -> Error "breakers_not_list"
 
-let read_json path =
-  Yojson.Safe.from_file path
+let install engine rule =
+  if rule.identifier = "" || rule.threshold <= 0L || rule.cooldown_ns < 0L then engine
+  else RuleMap.add rule.identifier { rule; state = Closed; violations = 0L; opened_at_ns = 0L; trips = 0L } engine
 
-let main risk_path breaker_path =
-  try
-    let risk_policy = read_json risk_path in
-    let breaker_policy = read_json breaker_path in
-    let now_ns = Int64.of_float (Unix.gettimeofday () *. 1_000_000_000.) in
-    match validate_risk_policy risk_policy now_ns, validate_circuit_breaker_policy breaker_policy now_ns with
-    | Ok (), Ok () -> print_endline "policy_valid"
-    | Error reason, _ -> print_endline ("policy_invalid:" ^ reason)
-    | _, Error reason -> print_endline ("circuit_breaker_invalid:" ^ reason)
-  with
-  | Sys_error reason -> print_endline ("file_error:" ^ reason)
-  | Yojson.Json_error reason -> print_endline ("json_error:" ^ reason)
-  | Type_error (reason, _) -> print_endline ("type_error:" ^ reason)
+let observe engine identifier amount now_ns =
+  match RuleMap.find_opt identifier engine with
+  | None -> engine
+  | Some runtime ->
+      if runtime.state = Open || amount <= 0L then engine
+      else
+        let violations = saturating_add runtime.violations amount in
+        if violations >= runtime.rule.threshold then
+          RuleMap.add identifier { runtime with state = Open; violations; opened_at_ns = now_ns; trips = saturating_add runtime.trips 1L } engine
+        else RuleMap.add identifier { runtime with violations } engine
+
+let advance_time engine now_ns =
+  RuleMap.mapi (fun _ runtime ->
+    if runtime.state = Open && not runtime.rule.manual_clear && Int64.compare now_ns runtime.opened_at_ns >= 0 && Int64.compare (Int64.sub now_ns runtime.opened_at_ns) runtime.rule.cooldown_ns >= 0 then { runtime with state = HalfOpen }
+    else runtime) engine
+
+let clear engine identifier =
+  match RuleMap.find_opt identifier engine with
+  | Some runtime when runtime.rule.manual_clear || runtime.state = HalfOpen -> RuleMap.add identifier { runtime with state = Closed; violations = 0L; opened_at_ns = 0L } engine
+  | _ -> engine
+
+let trip_count engine identifier =
+  match RuleMap.find_opt identifier engine with
+  | Some runtime -> runtime.trips
+  | None -> 0L
+
+let default_rule = { identifier = "CB-HF-001"; scope = Strategy; threshold = 1000L; cooldown_ns = 10_000L; manual_clear = true }
 
 let () =
-  let risk_path = if Array.length Sys.argv > 1 then Sys.argv.(1) else "config/risk/default_risk_policy.json" in
-  let breaker_path = if Array.length Sys.argv > 2 then Sys.argv.(2) else "config/circuit_breakers/default_circuit_breakers.json" in
-  main risk_path breaker_path
+  let engine = install empty default_rule in
+  let engine = Array.fold_left (fun current index -> observe current "CB-HF-001" 1L (Int64.of_int index)) engine (Array.init 100_000 (fun index -> index)) in
+  let engine = apply_update engine (Replace { default_rule with threshold = 50_000L }) in
+  let engine = clear engine "CB-HF-001" in
+  let engine = observe engine "CB-HF-001" 50_000L 200_000L in
+  let output = match state engine "CB-HF-001" with Some Open -> "dynamic_policy_open" | Some Closed -> "dynamic_policy_closed" | Some HalfOpen -> "dynamic_policy_half_open" | None -> "dynamic_policy_missing" in
+  print_endline (output ^ ":" ^ Int64.to_string (trip_count engine "CB-HF-001"))

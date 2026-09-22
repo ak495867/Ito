@@ -1,10 +1,13 @@
 use ito_connectivity_guard::{
-    authorize, lease_digest, SessionLease, SessionState, VenuePermission,
+    authorize, lease_digest, ConnectionEvent, ConnectivityLogger, SessionLease, SessionState, VenuePermission,
 };
 use std::env;
 
 fn main() {
     let live = env::args().any(|value| value == "--live");
+    let audit_path = env::args().nth(1).unwrap_or_else(|| "audit.log".to_string());
+    let logger = ConnectivityLogger::new(&audit_path);
+
     let permission = VenuePermission {
         venue_id: 5,
         broker_id: 8,
@@ -23,7 +26,21 @@ fn main() {
         state: SessionState::Ready,
     };
     match authorize(&permission, &lease, 11, 21, live, "node-a", 1_000, 10) {
-        Ok(()) => println!("connectivity_authorized:{}", lease_digest(&lease)),
-        Err(error) => println!("connectivity_rejected:{error:?}"),
+        Ok(()) => {
+            logger.log_event(&ConnectionEvent::Authorization {
+                venue_id: permission.venue_id,
+                success: true,
+                failure_reason: None,
+            });
+            println!("connectivity_authorized:{}", lease_digest(&lease));
+        }
+        Err(error) => {
+            logger.log_event(&ConnectionEvent::Authorization {
+                venue_id: permission.venue_id,
+                success: false,
+                failure_reason: Some(error),
+            });
+            println!("connectivity_rejected");
+        }
     }
 }

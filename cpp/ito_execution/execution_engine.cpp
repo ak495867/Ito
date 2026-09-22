@@ -9,6 +9,10 @@ constexpr std::uint16_t kGatewayUnavailable = 200;
 constexpr std::uint16_t kHalted = 201;
 constexpr std::uint16_t kRiskRejected = 202;
 constexpr std::uint16_t kDuplicateCorrelation = 203;
+constexpr std::uint16_t kCircuitOpen = 204;
+constexpr std::uint16_t kCircuitHalfOpen = 205;
+constexpr std::uint64_t kCircuitFailureThreshold = 5;
+constexpr std::uint64_t kCircuitCooldownNs = 30'000'000'000ULL;
 }
 
 ExecutionEngine::ExecutionEngine(core::EventJournal& journal, risk::RiskEngine& risk_engine)
@@ -17,6 +21,11 @@ ExecutionEngine::ExecutionEngine(core::EventJournal& journal, risk::RiskEngine& 
 void ExecutionEngine::set_gateway_state(GatewayState state) {
     std::scoped_lock lock(mutex_);
     gateway_state_ = state;
+    if (state == GatewayState::Ready) {
+        circuit_state_ = CircuitState::Closed;
+        circuit_failures_ = 0;
+        circuit_opened_at_ns_ = 0;
+    }
 }
 
 void ExecutionEngine::set_halted(bool halted) {
@@ -37,6 +46,18 @@ std::optional<protocol::ExecutionEvent> ExecutionEngine::submit(const protocol::
         journal_.append(protocol::EventType::OrderSent, intent.correlation_id, std::to_string(kDuplicateCorrelation));
         return std::nullopt;
     }
+    if (circuit_state_ == CircuitState::Open) {
+        if (now_ns - circuit_opened_at_ns_ >= kCircuitCooldownNs) {
+            circuit_state_ = CircuitState::HalfOpen;
+        } else {
+            journal_.append(protocol::EventType::OrderSent, intent.correlation_id, std::to_string(kCircuitOpen));
+            return std::nullopt;
+        }
+    }
+    if (circuit_state_ == CircuitState::HalfOpen && half_open_in_flight_) {
+        journal_.append(protocol::EventType::OrderSent, intent.correlation_id, std::to_string(kCircuitHalfOpen));
+        return std::nullopt;
+    }
     if (halted_ || gateway_state_ != GatewayState::Ready) {
         journal_.append(protocol::EventType::OrderSent, intent.correlation_id, std::to_string(kGatewayUnavailable));
         return std::nullopt;
@@ -45,6 +66,9 @@ std::optional<protocol::ExecutionEvent> ExecutionEngine::submit(const protocol::
     if (decision.status != protocol::RiskStatus::Approved) {
         journal_.append(protocol::EventType::OrderSent, intent.correlation_id, std::to_string(kRiskRejected));
         return std::nullopt;
+    }
+    if (circuit_state_ == CircuitState::HalfOpen) {
+        half_open_in_flight_ = true;
     }
     protocol::ExecutionEvent event{0, intent.correlation_id, next_venue_order_id_++, protocol::EventType::OrderSent, intent.price_ticks, intent.quantity, now_ns};
     event.event_id = journal_.append(protocol::EventType::OrderSent, intent.correlation_id, std::to_string(event.venue_order_id));
@@ -63,6 +87,12 @@ bool ExecutionEngine::acknowledge(std::uint64_t correlation_id, std::uint64_t ve
     it->second.type = protocol::EventType::Acknowledgment;
     it->second.timestamp_ns = now_ns;
     journal_.append(protocol::EventType::Acknowledgment, correlation_id, std::to_string(venue_order_id));
+    if (circuit_state_ == CircuitState::HalfOpen) {
+        circuit_state_ = CircuitState::Closed;
+        circuit_failures_ = 0;
+        circuit_opened_at_ns_ = 0;
+        half_open_in_flight_ = false;
+    }
     return true;
 }
 
@@ -75,6 +105,11 @@ std::vector<protocol::ExecutionEvent> ExecutionEngine::events() const {
         result.push_back(value);
     }
     return result;
+}
+
+ExecutionEngine::CircuitState ExecutionEngine::circuit_state() const {
+    std::scoped_lock lock(mutex_);
+    return circuit_state_;
 }
 
 }

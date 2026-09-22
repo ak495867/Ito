@@ -20,8 +20,39 @@ def load_snapshot(path: Path) -> dict[str, object]:
     return value
 
 
+def render_audit_metrics(audit: list[dict[str, object]] | None) -> str:
+    if audit is None:
+        return ""
+    
+    actions_count: dict[str, int] = {}
+    total_actions = 0
+    
+    for entry in audit:
+        if isinstance(entry, dict):
+            action = entry.get("action")
+            if isinstance(action, str):
+                actions_count[action] = actions_count.get(action, 0) + 1
+                total_actions += 1
+    
+    rows = [
+        "# TYPE ito_audit_total_events gauge",
+        f"ito_audit_total_events {total_actions}",
+    ]
+    
+    for action, count in sorted(actions_count.items()):
+        metric_name = f"ito_audit_action_{action.replace('-', '_')}_total"
+        rows.extend([
+            f"# TYPE {metric_name} gauge",
+            f"{metric_name} {count}",
+        ])
+    
+    return "\n".join(rows) + "\n"
+
+
 def render_metrics(
-    health: dict[str, object], portfolio: dict[str, object] | None = None
+    health: dict[str, object], 
+    portfolio: dict[str, object] | None = None,
+    audit: list[dict[str, object]] | None = None
 ) -> str:
     local = 1 if health.get("local_status") == "healthy" else 0
     production = 1 if health.get("production_status") == "production_ready" else 0
@@ -52,10 +83,14 @@ def render_metrics(
             if not isinstance(value, int):
                 raise ExporterError(f"metric_invalid:{name}")
             rows.extend(("# TYPE " + name + " gauge", f"{name} {value}"))
+    
+    if audit is not None:
+        rows.append(render_audit_metrics(audit))
+    
     return "\n".join(rows) + "\n"
 
 
-def make_handler(health_path: Path, portfolio_path: Path | None):
+def make_handler(health_path: Path, portfolio_path: Path | None, audit_path: Path | None):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
             if self.path != "/metrics":
@@ -69,7 +104,12 @@ def make_handler(health_path: Path, portfolio_path: Path | None):
                     if portfolio_path is not None and portfolio_path.is_file()
                     else None
                 )
-                payload = render_metrics(health, portfolio).encode("utf-8")
+                audit = (
+                    load_snapshot(audit_path)
+                    if audit_path is not None and audit_path.is_file()
+                    else None
+                )
+                payload = render_metrics(health, portfolio, audit).encode("utf-8")
             except ExporterError:
                 self.send_response(503)
                 self.end_headers()
@@ -90,6 +130,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--health", type=Path, required=True)
     parser.add_argument("--portfolio", type=Path)
+    parser.add_argument("--audit", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--listen", action="store_true")
     parser.add_argument("--host", default="127.0.0.1")
@@ -97,13 +138,21 @@ def main() -> int:
     args = parser.parse_args()
     if args.listen:
         ThreadingHTTPServer(
-            (args.host, args.port), make_handler(args.health, args.portfolio)
+            (args.host, args.port), make_handler(args.health, args.portfolio, args.audit)
         ).serve_forever()
     else:
-        output = render_metrics(
-            load_snapshot(args.health),
-            load_snapshot(args.portfolio) if args.portfolio else None,
+        health = load_snapshot(args.health)
+        portfolio = (
+            load_snapshot(args.portfolio)
+            if args.portfolio is not None and args.portfolio.is_file()
+            else None
         )
+        audit = (
+            load_snapshot(args.audit)
+            if args.audit is not None and args.audit.is_file()
+            else None
+        )
+        output = render_metrics(health, portfolio, audit)
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(output, encoding="utf-8")
@@ -112,7 +161,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    try:
-        raise SystemExit(main())
-    except ExporterError as error:
-        raise SystemExit(str(error))
+    raise SystemExit(main())

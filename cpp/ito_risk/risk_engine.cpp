@@ -15,6 +15,9 @@ constexpr std::uint16_t kRate = 106;
 constexpr std::uint16_t kOverflow = 107;
 constexpr std::uint16_t kInvalidOrder = 108;
 constexpr std::uint16_t kInvalidLimits = 109;
+constexpr std::uint16_t kInvalidPosition = 110;
+constexpr std::uint16_t kInvalidSide = 111;
+constexpr std::uint16_t kRateOverflow = 112;
 }
 
 RiskEngine::RiskEngine(core::EventJournal& journal) : journal_(journal) {}
