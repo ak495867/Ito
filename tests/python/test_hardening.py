@@ -1,3 +1,4 @@
+import conftest
 import hashlib
 import io
 import json

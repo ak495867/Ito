@@ -1,3 +1,4 @@
+import conftest
 import unittest
 
 from benchmark_multibranch import branch_samples, summarize

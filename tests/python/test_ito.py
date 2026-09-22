@@ -1,3 +1,4 @@
+import conftest
 import unittest
 
 from replay import Event, validate
