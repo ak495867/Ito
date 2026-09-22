@@ -464,3 +464,19 @@ mod tests {
         assert_eq!(entry.details, "test details");
     }
 }
+
+#[no_mangle]
+pub extern "C" fn ito_connectivity_guard_authorize(
+    venue_id: u16,
+    broker_id: u16,
+    branch_id: u64,
+    entity_id: u64,
+    live_enabled: bool,
+) -> bool {
+    venue_id > 0 && broker_id > 0 && branch_id > 0 && entity_id > 0 && !live_enabled
+}
+
+#[no_mangle]
+pub extern "C" fn ito_connectivity_guard_version() -> u32 {
+    1
+}

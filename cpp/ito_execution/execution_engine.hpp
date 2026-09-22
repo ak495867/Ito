@@ -19,6 +19,7 @@ public:
     void set_gateway_state(GatewayState state);
     void set_halted(bool halted);
     std::optional<protocol::ExecutionEvent> submit(const protocol::OrderIntent& intent, std::uint64_t now_ns);
+    std::optional<protocol::ExecutionEvent> cancel_replace(std::uint64_t correlation_id, std::int64_t new_price, std::int64_t new_quantity, std::uint64_t now_ns);
     bool acknowledge(std::uint64_t correlation_id, std::uint64_t venue_order_id, std::uint64_t now_ns);
     std::vector<protocol::ExecutionEvent> events() const;
     CircuitState circuit_state() const;

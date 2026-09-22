@@ -86,6 +86,21 @@ std::optional<protocol::ExecutionEvent> ExecutionEngine::submit(const protocol::
     return event;
 }
 
+std::optional<protocol::ExecutionEvent> ExecutionEngine::cancel_replace(std::uint64_t correlation_id, std::int64_t new_price, std::int64_t new_quantity, std::uint64_t now_ns) {
+    std::scoped_lock lock(mutex_);
+    const auto it = active_.find(correlation_id);
+    if (it == active_.end() || new_price <= 0 || new_quantity <= 0 || halted_ || gateway_state_ != GatewayState::Ready) {
+        return std::nullopt;
+    }
+    it->second.price_ticks = new_price;
+    it->second.quantity = new_quantity;
+    it->second.timestamp_ns = now_ns;
+    it->second.type = protocol::EventType::Cancel;
+    const std::string payload = std::to_string(it->second.venue_order_id) + ":" + std::to_string(new_price) + ":" + std::to_string(new_quantity);
+    it->second.event_id = journal_.append(protocol::EventType::Cancel, correlation_id, payload);
+    return it->second;
+}
+
 bool ExecutionEngine::acknowledge(std::uint64_t correlation_id, std::uint64_t venue_order_id, std::uint64_t now_ns) {
     std::scoped_lock lock(mutex_);
     const auto it = active_.find(correlation_id);

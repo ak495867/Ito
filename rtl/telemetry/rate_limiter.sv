@@ -1,5 +1,6 @@
 module rate_limiter #(
-    parameter integer WIDTH = 32
+    parameter integer WIDTH = 32,
+    parameter integer REFILL_INTERVAL = 1000
 ) (
     input logic clk,
     input logic rst_n,
@@ -10,17 +11,29 @@ module rate_limiter #(
     output logic tripped,
     output logic [WIDTH-1:0] count
 );
+    logic [WIDTH-1:0] refill_timer;
+
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             count <= '0;
+            refill_timer <= '0;
             allowed <= 1'b0;
             tripped <= 1'b0;
         end else if (window_reset) begin
             count <= '0;
+            refill_timer <= '0;
             allowed <= 1'b0;
             tripped <= 1'b0;
         end else begin
             allowed <= 1'b0;
+            if (refill_timer >= REFILL_INTERVAL) begin
+                refill_timer <= '0;
+                if (count > '0) begin
+                    count <= count - 1'b1;
+                end
+            end else begin
+                refill_timer <= refill_timer + 1'b1;
+            end
             if (request) begin
                 if (count < max_requests) begin
                     count <= count + 1'b1;

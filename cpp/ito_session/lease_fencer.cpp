@@ -31,6 +31,15 @@ bool LeaseFencer::release(const std::string& owner_id) {
     return true;
 }
 
+bool LeaseFencer::sweep(std::uint64_t now_ns) {
+    if (!current_.owner_id.empty() && current_.expires_at_ns <= now_ns) {
+        current_.expires_at_ns = 0;
+        current_.owner_id.clear();
+        return true;
+    }
+    return false;
+}
+
 bool LeaseFencer::owns(std::uint16_t venue_id, std::uint64_t branch_id, const std::string& owner_id, std::uint64_t now_ns) const {
     return current_.venue_id == venue_id && current_.branch_id == branch_id && current_.owner_id == owner_id && current_.expires_at_ns > now_ns;
 }
