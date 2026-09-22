@@ -107,7 +107,7 @@ std::vector<protocol::ExecutionEvent> ExecutionEngine::events() const {
     return result;
 }
 
-ExecutionEngine::CircuitState ExecutionEngine::circuit_state() const {
+CircuitState ExecutionEngine::circuit_state() const {
     std::scoped_lock lock(mutex_);
     return circuit_state_;
 }
