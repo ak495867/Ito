@@ -372,7 +372,7 @@ pub fn lease_digest(lease: &SessionLease) -> String {
 pub fn audit_digest(entry: &AuditEntry) -> String {
     let mut hasher = Sha256::new();
     hasher.update(format!(
-        "{}:{}:{}:{}:{}:{}",
+        "{}:{}:{}:{}",
         entry.event_id, entry.timestamp_ns, entry.event_type, entry.details
     )
     .as_bytes());
