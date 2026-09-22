@@ -12,12 +12,14 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <deque>
 #include <functional>
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <unordered_set>
 #include <vector>
 
 namespace ito::connectivity {

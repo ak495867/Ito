@@ -49,6 +49,8 @@ public:
     static std::size_t pool_size();
 
 private:
+    class ConnectionPool;
+
     bool attempt_connect();
     bool establish_tls();
     void close_socket();
