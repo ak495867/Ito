@@ -1,57 +1,35 @@
-open Yojson.Safe.Util
+module RuleMap = Map.Make(String)
 
 type scope = Strategy | Venue | Branch | Group
+
 type state = Closed | Open | HalfOpen
 
-type rule = {
-  identifier : string;
-  scope : scope;
-  threshold : int64;
-  cooldown_ns : int64;
-  manual_clear : bool;
-}
-
-type runtime = {
-  rule : rule;
-  state : state;
-  violations : int64;
-  opened_at_ns : int64;
-  trips : int64;
-}
-
+type rule = { identifier : string; scope : scope; threshold : int64; cooldown_ns : int64; manual_clear : bool }
+type runtime = { rule : rule; state : state; violations : int64; opened_at_ns : int64; trips : int64 }
 type policy_update = Add of rule | Replace of rule | Remove of string
 
 let empty = RuleMap.empty
-
-module RuleMap = Map.Make(String)
 
 let saturating_add left right =
   if Int64.compare right 0L > 0 && Int64.compare left (Int64.sub Int64.max_int right) > 0 then Int64.max_int
   else if Int64.compare right 0L < 0 && Int64.compare left (Int64.sub Int64.min_int right) < 0 then Int64.min_int
   else Int64.add left right
 
-let validate_breaker_json breaker =
-  required_string breaker "id" >>= fun _ ->
-  required_string breaker "scope" >>= fun _ ->
-  required_string breaker "trigger" >>= fun _ ->
-  required_int breaker "threshold" >>= fun _ ->
-  required_string breaker "action" >>= fun _ ->
-  required_string breaker "recovery"
-
-let validate_circuit_breaker_policy value now_ns =
-  required_int value "policy_version" >>= fun _ ->
-  required_int value "expires_at_ns" >>= fun expires_at_ns ->
-  if expires_at_ns <= now_ns then Error "policy_expired" else
-  try
-    let breakers = value |> member "breakers" |> to_list in
-    match List.find_opt (fun breaker -> validate_breaker breaker |> Result.is_error) breakers with
-    | Some breaker -> validate_breaker breaker |> Result.get_error |> fun reason -> Error reason
-    | None -> Ok ()
-  with Type_error _ -> Error "breakers_not_list"
-
 let install engine rule =
   if rule.identifier = "" || rule.threshold <= 0L || rule.cooldown_ns < 0L then engine
   else RuleMap.add rule.identifier { rule; state = Closed; violations = 0L; opened_at_ns = 0L; trips = 0L } engine
+
+let apply_update engine = function
+  | Add rule -> install engine rule
+  | Replace rule ->
+      if RuleMap.mem rule.identifier engine then install engine rule
+      else engine
+  | Remove identifier -> RuleMap.remove identifier engine
+
+let state engine identifier =
+  match RuleMap.find_opt identifier engine with
+  | Some runtime -> Some runtime.state
+  | None -> None
 
 let observe engine identifier amount now_ns =
   match RuleMap.find_opt identifier engine with

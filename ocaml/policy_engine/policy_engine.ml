@@ -1,5 +1,7 @@
 open Yojson.Safe.Util
 
+let ( >>= ) = Result.bind
+
 type branch_mode = Normal | Degraded | Restricted | Halted
 type side = Buy | Sell
 
