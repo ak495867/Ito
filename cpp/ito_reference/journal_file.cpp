@@ -15,13 +15,13 @@ constexpr std::uint32_t kCurrentVersion = 1;
 
 JournalFile::JournalFile(const std::string& path) : path_(path) {
     std::filesystem::create_directories(std::filesystem::path(path).parent_path());
-    stream_.open(path, std::ios::binary | std::ios::in | std::ios::out);
+    stream_.open(path, std::ios::binary | std::ios::in | std::ios::out | std::ios::ate);
     if (!stream_.is_open()) {
         stream_.open(path, std::ios::binary | std::ios::out | std::ios::trunc);
         if (stream_.is_open()) {
             write_header();
             stream_.close();
-            stream_.open(path, std::ios::binary | std::ios::in | std::ios::out);
+            stream_.open(path, std::ios::binary | std::ios::in | std::ios::out | std::ios::ate);
         }
     } else {
         read_header();
@@ -181,8 +181,9 @@ bool JournalFile::rotate() {
 std::size_t JournalFile::file_size() const {
     std::scoped_lock lock(mutex_);
     if (!stream_.is_open()) return 0;
-    auto pos = stream_.tellp();
-    return static_cast<std::size_t>(pos);
+    std::error_code ec;
+    auto sz = std::filesystem::file_size(path_, ec);
+    return ec ? 0 : static_cast<std::size_t>(sz);
 }
 
 JournalManager::JournalManager(const std::string& base_path) : base_path_(base_path) {}
