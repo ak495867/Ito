@@ -1,6 +1,8 @@
 #include "journal_file.hpp"
 
 #include <algorithm>
+#include <array>
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 
@@ -64,7 +66,7 @@ bool JournalFile::read_header() {
     return true;
 }
 
-bool JournalFile::verify_integrity() {
+bool JournalFile::verify_integrity() const {
     if (!stream_.is_open()) return false;
     auto pos = stream_.tellg();
     stream_.seekg(0, std::ios::end);
@@ -95,7 +97,6 @@ bool JournalFile::append(const protocol::EventEnvelope& event) {
     stream_.write(reinterpret_cast<const char*>(&event.event_id), sizeof(event.event_id));
     stream_.write(reinterpret_cast<const char*>(&event.sequence), sizeof(event.sequence));
     stream_.write(reinterpret_cast<const char*>(&event.type), sizeof(event.type));
-    stream_.write(reinterpret_cast<const char*>(&event.correlation_id), sizeof(event.correlation_id));
     stream_.write(reinterpret_cast<const char*>(event.payload.data()), static_cast<std::streamsize>(event.payload.size()));
     stream_.flush();
     last_sequence_ = event.sequence;
@@ -148,8 +149,6 @@ std::optional<std::vector<protocol::EventEnvelope>> JournalFile::load(std::uint6
         offset += sizeof(event.sequence);
         std::memcpy(&event.type, buffer.data() + offset, sizeof(event.type));
         offset += sizeof(event.type);
-        std::memcpy(&event.correlation_id, buffer.data() + offset, sizeof(event.correlation_id));
-        offset += sizeof(event.correlation_id);
         event.payload = std::string(buffer.data() + offset, buffer.data() + record_size);
 
         if (event.sequence >= from_sequence) {
@@ -161,7 +160,7 @@ std::optional<std::vector<protocol::EventEnvelope>> JournalFile::load(std::uint6
     return events;
 }
 
-void JournalFile::rotate() {
+bool JournalFile::rotate() {
     std::scoped_lock lock(mutex_);
     if (stream_.is_open()) {
         stream_.close();
@@ -174,6 +173,7 @@ void JournalFile::rotate() {
         write_header();
         last_sequence_ = 0;
     }
+    return true;
 }
 
 std::size_t JournalFile::file_size() const {
@@ -181,6 +181,47 @@ std::size_t JournalFile::file_size() const {
     if (!stream_.is_open()) return 0;
     auto pos = stream_.tellp();
     return static_cast<std::size_t>(pos);
+}
+
+JournalManager::JournalManager(const std::string& base_path) : base_path_(base_path) {}
+
+JournalManager::~JournalManager() = default;
+
+bool JournalManager::append(const protocol::EventEnvelope& event) {
+    std::scoped_lock lock(mutex_);
+    if (journals_.empty()) return false;
+    return journals_.back()->append(event);
+}
+
+std::optional<std::vector<protocol::EventEnvelope>> JournalManager::load_recent(std::uint64_t count) const {
+    std::scoped_lock lock(mutex_);
+    if (journals_.empty()) return std::nullopt;
+    auto events = journals_.back()->load(0);
+    if (!events || events->size() <= count) return events;
+    return std::vector<protocol::EventEnvelope>(events->end() - count, events->end());
+}
+
+std::uint64_t JournalManager::last_sequence() const {
+    std::scoped_lock lock(mutex_);
+    if (journals_.empty()) return 0;
+    return journals_.back()->last_sequence();
+}
+
+bool JournalManager::rotate_all() {
+    std::scoped_lock lock(mutex_);
+    bool ok = true;
+    for (auto& journal : journals_) {
+        if (!journal->rotate()) ok = false;
+    }
+    return ok;
+}
+
+bool JournalManager::verify_all() {
+    std::scoped_lock lock(mutex_);
+    for (const auto& journal : journals_) {
+        if (!journal->healthy()) return false;
+    }
+    return true;
 }
 
 }

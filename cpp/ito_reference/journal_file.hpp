@@ -2,8 +2,10 @@
 
 #include "../../interfaces/schemas/ito_protocol.hpp"
 
+#include <array>
 #include <cstdint>
 #include <fstream>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -20,17 +22,15 @@ public:
     bool healthy() const;
     std::uint64_t last_sequence() const;
     std::optional<std::vector<protocol::EventEnvelope>> load(std::uint64_t from_sequence = 0) const;
-    void rotate();
+    bool rotate();
     std::size_t file_size() const;
 
 private:
     bool write_header();
     bool read_header();
-    bool verify_integrity();
+    bool verify_integrity() const;
 
-    std::string path_;
-    mutable std::mutex mutex_;
-    std::ofstream stream_;
+    mutable std::fstream stream_;
     std::uint64_t last_sequence_{0};
     bool initialized_{false};
     static constexpr std::uint64_t kMaxFileSize = 1024ULL * 1024ULL * 256;
