@@ -78,4 +78,8 @@ let () =
   let mode = List.hd all_modes in
   let verdict = validate mode limits 2_000L Buy 10L 100L 0L in
   print_endline (string_of_verdict verdict);
-  ignore (validate mode limits 2_000L Sell 10L 100L 0L)
+  ignore (validate mode limits 2_000L Sell 10L 100L 0L);
+  ignore (required_string (`Assoc [("key", `String "val")]) "key");
+  ignore (validate_limits_json (`Assoc [("max_quantity", `Int 100); ("max_notional", `Int 1000); ("max_position", `Int 100); ("expires_at_ns", `Int 10000); ("trading_enabled", `Bool true)]));
+  ignore (validate_monotonicity 1L 2L);
+  ignore (validate_policy_file "config/limits/default.json" 2_000L)
