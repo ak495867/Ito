@@ -1,11 +1,14 @@
 use ito_connectivity_guard::{
-    authorize, lease_digest, ConnectionEvent, ConnectivityLogger, SessionLease, SessionState, VenuePermission,
+    authorize, lease_digest, ConnectionEvent, ConnectivityLogger, SessionLease, SessionState,
+    VenuePermission,
 };
 use std::env;
 
 fn main() {
     let live = env::args().any(|value| value == "--live");
-    let audit_path = env::args().nth(1).unwrap_or_else(|| "audit.log".to_string());
+    let audit_path = env::args()
+        .nth(1)
+        .unwrap_or_else(|| "audit.log".to_string());
     let logger = ConnectivityLogger::new(&audit_path);
 
     let permission = VenuePermission {

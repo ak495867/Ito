@@ -79,14 +79,14 @@ impl fmt::Display for AuthorizationFailure {
             AuthorizationFailure::ProtocolViolation => write!(f, "protocol_violation"),
             AuthorizationFailure::SequenceOutOfOrder => write!(f, "sequence_out_of_order"),
             AuthorizationFailure::PayloadSizeExceeded => write!(f, "payload_size_exceeded"),
-            AuthorizationFailure::SignatureVerificationFailed => write!(f, "signature_verification_failed"),
+            AuthorizationFailure::SignatureVerificationFailed => {
+                write!(f, "signature_verification_failed")
+            }
         }
     }
 }
- 
 
 static EVENT_ID: AtomicU64 = AtomicU64::new(1);
-
 
 #[derive(Clone, Debug, Serialize)]
 pub struct AuditEntry {
@@ -218,26 +218,47 @@ impl ConnectivityLogger {
 
     pub fn log_event(&self, event: &ConnectionEvent) {
         let details = match event {
-            ConnectionEvent::ConnectAttempt { host, port, success } => {
+            ConnectionEvent::ConnectAttempt {
+                host,
+                port,
+                success,
+            } => {
                 format!("connect_attempt:{} {} {}", host, port, success)
             }
-            ConnectionEvent::ConnectionEstablished { venue_id, duration_ns } => {
+            ConnectionEvent::ConnectionEstablished {
+                venue_id,
+                duration_ns,
+            } => {
                 format!("connected:venue_{} duration_{}", venue_id, duration_ns)
             }
             ConnectionEvent::ConnectionClosed { venue_id, reason } => {
                 format!("closed:venue_{} reason:{}", venue_id, reason)
             }
-            ConnectionEvent::MessageReceived { venue_id, message_type, size } => {
-                format!("received:venue_{} type_{} size_{}", venue_id, message_type, size)
+            ConnectionEvent::MessageReceived {
+                venue_id,
+                message_type,
+                size,
+            } => {
+                format!(
+                    "received:venue_{} type_{} size_{}",
+                    venue_id, message_type, size
+                )
             }
             ConnectionEvent::MessageSent { venue_id, size } => {
                 format!("sent:venue_{} size_{}", venue_id, size)
             }
-            ConnectionEvent::Authorization { venue_id, success, failure_reason } => {
+            ConnectionEvent::Authorization {
+                venue_id,
+                success,
+                failure_reason,
+            } => {
                 let reason = failure_reason
                     .as_ref()
                     .map_or_else(|| "unknown".to_string(), |r| r.to_string());
-                format!("auth:venue_{} success:{} reason:{}", venue_id, success, reason)
+                format!(
+                    "auth:venue_{} success:{} reason:{}",
+                    venue_id, success, reason
+                )
             }
             ConnectionEvent::PoolFull => "pool_full".to_string(),
             ConnectionEvent::PoolReused => "pool_reused".to_string(),
@@ -253,10 +274,12 @@ impl ConnectivityLogger {
 pub fn init_audit_logger(audit_path: &str) -> Result<(), std::io::Error> {
     let mut guard = AUDIT_LOG.lock().unwrap();
     if (*guard).is_none() {
-        *guard = Some(std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(audit_path)?);
+        *guard = Some(
+            std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(audit_path)?,
+        );
     }
     Ok(())
 }
@@ -371,11 +394,13 @@ pub fn lease_digest(lease: &SessionLease) -> String {
 
 pub fn audit_digest(entry: &AuditEntry) -> String {
     let mut hasher = Sha256::new();
-    hasher.update(format!(
-        "{}:{}:{}:{}",
-        entry.event_id, entry.timestamp_ns, entry.event_type, entry.details
-    )
-    .as_bytes());
+    hasher.update(
+        format!(
+            "{}:{}:{}:{}",
+            entry.event_id, entry.timestamp_ns, entry.event_type, entry.details
+        )
+        .as_bytes(),
+    );
     hasher
         .finalize()
         .iter()
@@ -389,12 +414,30 @@ mod tests {
 
     #[test]
     fn test_authority_failure_display() {
-        assert_eq!(AuthorizationFailure::VenueNotAllowed.to_string(), "venue_not_allowed");
-        assert_eq!(AuthorizationFailure::RateExceeded.to_string(), "rate_exceeded");
-        assert_eq!(AuthorizationFailure::TlsHandshakeFailed.to_string(), "tls_handshake_failed");
-        assert_eq!(AuthorizationFailure::ProtocolViolation.to_string(), "protocol_violation");
-        assert_eq!(AuthorizationFailure::PayloadSizeExceeded.to_string(), "payload_size_exceeded");
-        assert_eq!(AuthorizationFailure::SignatureVerificationFailed.to_string(), "signature_verification_failed");
+        assert_eq!(
+            AuthorizationFailure::VenueNotAllowed.to_string(),
+            "venue_not_allowed"
+        );
+        assert_eq!(
+            AuthorizationFailure::RateExceeded.to_string(),
+            "rate_exceeded"
+        );
+        assert_eq!(
+            AuthorizationFailure::TlsHandshakeFailed.to_string(),
+            "tls_handshake_failed"
+        );
+        assert_eq!(
+            AuthorizationFailure::ProtocolViolation.to_string(),
+            "protocol_violation"
+        );
+        assert_eq!(
+            AuthorizationFailure::PayloadSizeExceeded.to_string(),
+            "payload_size_exceeded"
+        );
+        assert_eq!(
+            AuthorizationFailure::SignatureVerificationFailed.to_string(),
+            "signature_verification_failed"
+        );
     }
 
     #[test]
