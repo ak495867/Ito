@@ -27,11 +27,11 @@ int main() {
     auto resting = ito::execution::QueueTracker::create_order(101, true, 100, 10, 50);
     assert(resting.queue_ahead == 50);
 
-    const auto fill1 = ito::execution::QueueTracker::process_trade(resting, 100, 30, 0.0);
+    const auto fill1 = ito::execution::QueueTracker::process_trade(resting, 100, 30, 0U);
     assert(fill1 == 0);
     assert(resting.queue_ahead == 20);
 
-    const auto fill2 = ito::execution::QueueTracker::process_trade(resting, 100, 25, 0.0);
+    const auto fill2 = ito::execution::QueueTracker::process_trade(resting, 100, 25, 0U);
     assert(fill2 == 5);
     assert(resting.remaining_quantity == 5);
     assert(resting.queue_ahead == 0);

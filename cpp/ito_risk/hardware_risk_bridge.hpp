@@ -62,7 +62,8 @@ public:
 
     HardwareGateOutputs step(const HardwareGateInputs& in) {
         if (stage_valid_) {
-            const auto notional = static_cast<unsigned __int128>(stage_price_ticks_) * static_cast<unsigned __int128>(stage_quantity_);
+            const bool notional_exceeded = (stage_price_ticks_ > 0 && stage_quantity_ > 0) &&
+                (stage_quantity_ > stage_max_notional_ticks_ / stage_price_ticks_);
             const std::int64_t signed_quantity = stage_side_buy_ ? static_cast<std::int64_t>(stage_quantity_) : -static_cast<std::int64_t>(stage_quantity_);
             const std::int64_t next_position = stage_net_position_ + signed_quantity;
 
@@ -77,7 +78,7 @@ public:
                 out_reason_code_ = HardwareReasonCode::FeedClockUnhealthy;
             } else if (stage_quantity_ == 0 || stage_quantity_ > stage_max_quantity_) {
                 out_reason_code_ = HardwareReasonCode::QuantityLimit;
-            } else if (notional > static_cast<unsigned __int128>(stage_max_notional_ticks_)) {
+            } else if (notional_exceeded) {
                 out_reason_code_ = HardwareReasonCode::NotionalLimit;
             } else if (next_position > static_cast<std::int64_t>(stage_max_net_position_) || next_position < -static_cast<std::int64_t>(stage_max_net_position_)) {
                 out_reason_code_ = HardwareReasonCode::PositionLimit;

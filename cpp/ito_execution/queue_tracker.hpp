@@ -21,12 +21,13 @@ public:
         return RestingQueueOrder{id, price, qty, std::max<std::int64_t>(0, depth_ahead), is_buy};
     }
 
-    static std::int64_t process_trade(RestingQueueOrder& order, std::int64_t trade_price, std::int64_t trade_quantity, double cancellation_decay = 0.1) {
+    static std::int64_t process_trade(RestingQueueOrder& order, std::int64_t trade_price, std::int64_t trade_quantity, std::uint32_t cancellation_decay_bps = 1000) {
         const bool matches = (order.is_buy && trade_price <= order.price_ticks) || (!order.is_buy && trade_price >= order.price_ticks);
         if (!matches || trade_quantity <= 0) {
             return 0;
         }
-        const auto decayed_queue = static_cast<std::int64_t>(order.queue_ahead * (1.0 - cancellation_decay));
+        const auto decay_amount = (order.queue_ahead * static_cast<std::int64_t>(cancellation_decay_bps)) / 10000;
+        const auto decayed_queue = order.queue_ahead - decay_amount;
         if (trade_quantity > decayed_queue) {
             const auto fillable = trade_quantity - decayed_queue;
             const auto filled = std::min(order.remaining_quantity, fillable);
