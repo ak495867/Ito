@@ -43,13 +43,13 @@ Ito is designed for engineering development, deterministic simulation, controlle
 
 | Layer | Main responsibilities | Representative paths |
 | --- | --- | --- |
-| **Execution and Risk** | Order lifecycle, quantity-aware fills, policy limits, signed positions, gross exposure, expiry, halt handling, and checked fill accounting | `cpp/ito_execution`, `cpp/ito_risk`, `cpp/ito_session` |
-| **Connectivity** | Simulator identity mapping, controlled network adapter behavior, TLS/mTLS configuration, venue registry, session readiness, pending correlations, and uncertain-result handling | `cpp/ito_connectivity`, `cpp/ito_session` |
-| **Routing and Reconciliation** | Price-deviation controls, route authorization, lease validity, safe fallback, execution reconciliation, and failover fencing | `cpp/ito_routing`, `cpp/ito_reconciliation` |
+| **Execution and Risk** | Order lifecycle, zero-alloc L2 order book, queue tracking, quantity-aware fills, hardware risk bridge, policy limits, signed positions, gross exposure, expiry, halt handling, and checked fill accounting | `cpp/ito_execution`, `cpp/ito_risk`, `cpp/ito_session` |
+| **Connectivity** | Simulator identity mapping, MoldUDP64 and binary ITCH 5.0 feed parsing, PCAP replay, controlled network adapter behavior, TLS/mTLS configuration, venue registry, session readiness, pending correlations, and uncertain-result handling | `cpp/ito_connectivity`, `cpp/ito_session`, `python/connectivity` |
+| **Routing and Reconciliation** | Latency-weighted routing, speed-bump (IEX 350us) modeling, price-deviation controls, route authorization, lease validity, safe fallback, execution reconciliation, and failover fencing | `cpp/ito_routing`, `cpp/ito_reconciliation` |
 | **Security and Release** | Bounded authenticated wire frames, scope and lease validation, release digest binding, artifact verification, key-rotation drills, and deterministic provenance | `rust/connectivity_guard`, `rust/policy_signer`, `rust/artifact_verifier`, `scripts/operations` |
 | **Policy and Circuit Breakers** | Risk-policy structure, expiration, side-aware limits, overflow-safe checks, policy replacement, manual clear, and dynamic breaker stress | `ocaml/risk_policy`, `ocaml/policy_engine`, `ocaml/circuit_breaker` |
 | **Hardware Controls** | Pre-trade gating, risk acceleration, register-map encoding, order sequencing, backpressure, venue selection, protocol bridging, rate limiting, and latency telemetry | `rtl/risk_gate`, `rtl/order_sequencer`, `rtl/protocol_bridge`, `rtl/venue_adapters`, `rtl/telemetry` |
-| **Operations and Evidence** | Recovery archives, durable SQLite events and snapshots, health reports, Prometheus-compatible metrics, portfolio exposure, SBOMs, simulation evidence, and readiness classification | `python/operations`, `python/portfolio`, `scripts/operations`, `docs/production` |
+| **Operations and Evidence** | Microstructure engine, factor risk modeling (VaR/CVaR), multi-asset portfolio accounting, recovery archives, durable SQLite events and snapshots, health reports, Prometheus-compatible metrics, portfolio exposure, SBOMs, simulation evidence, and readiness classification | `python/operations`, `python/portfolio`, `python/backtest`, `scripts/operations`, `docs/production` |
 
 ---
 
@@ -86,10 +86,42 @@ The Python portfolio foundation complements the native path with weighted-averag
 | **Order identity** | Zero or duplicate correlations are rejected; simulator cancellation uses an explicit client-to-venue mapping. |
 | **Position limits** | Net and gross positions are checked with signed, overflow-safe arithmetic. |
 | **Notional limits** | Positive prices and bounded order notionals are required before approval. |
-| **Short sales** | Disabled by default in the portfolio layer and permitted only through explicit policy. |
+| **Short sales** | Disabled by default in the portfolio layer and permitted only through explicit policy and borrow locate availability. |
+| **Factor risk (VaR/CVaR)** | Multi-factor covariance exposure evaluated before order approval; breaches fail closed. |
+| **Queue priority** | Passive limit orders track queue position ahead, cancellation decay, and adverse selection drag. |
 | **Order lifecycle** | Partial fills, remaining quantity, terminal states, uncertainty, cancel, replace, and recovery semantics are represented explicitly. |
 | **Kill switch** | The RTL kill switch remains latched until an explicit clear request is presented. |
 | **Downstream backpressure** | The RTL order sequencer retains a transaction until downstream acceptance rather than dropping it. |
+
+---
+
+## Quantitative Microstructure and Execution Engine
+
+Ito incorporates realistic market microstructure, queue dynamics, and factor risk modeling across its C++ and Python stacks to eliminate idealized backtest assumptions:
+
+### 1. High-Performance L2 Depth and Queue Dynamics
+- **C++ Zero-Allocation Order Book (`cpp/ito_execution/zero_alloc_book.hpp`)**: Cache-line aligned (`alignas(64)`), contiguous memory layout without heap allocations on the critical path. Features native book walking to determine VWAP and slippage.
+- **Queue Position and Decay (`cpp/ito_execution/queue_tracker.hpp` & `python/backtest/engine.py`)**: Passive limit orders enter at the back of the queue (`queue_ahead`). Volume ahead decays as market participants cancel, and fills require incoming aggressive trades to consume resting queue ahead.
+- **Adverse Selection Modeling ("Winner's Curse")**: Passive fills model adverse price movement ($\alpha \times \text{spread}$) when informed order flow sweeps the book, preventing simulated strategies from assuming friction-free touch fills.
+
+### 2. Multi-Venue Smart Order Routing with Speed Bumps
+- **Routing Engine (`cpp/ito_routing/smart_order_router.hpp`)**: Ranks candidate routes using effective probability-weighted cost.
+- **Latency & Speed Bumps**: Incorporates network wire transit latency and IEX-style simulated 350-microsecond delay coils (`has_speed_bump`) to account for quote fade risk before execution arrives.
+
+### 3. Factor Risk Model and Portfolio Accounting
+- **Instrument Specifications (`python/portfolio/portfolio.py`)**: Distinguishes cash notionals, tick sizes, and contract multipliers (e.g. 50x for E-mini futures vs. 1x for equities).
+- **Borrow Locates**: Enforces institutional short-sale controls with required locate registration (`register_locate`).
+- **Barra-Style Factor Model (`FactorModel`)**: Evaluates multi-factor loadings $\mathbf{\beta}$, factor covariance matrix $\mathbf{\Sigma}$, and idiosyncratic specific variance:
+  $$\sigma_{\text{portfolio}}^2 = \mathbf{F}^T \mathbf{\Sigma} \mathbf{F} + \sum_i w_i^2 \sigma_{\epsilon, i}^2$$
+  Pre-trade validation enforces 99% Parametric Value-at-Risk (`parametric_var`) and 99% Expected Shortfall (`expected_shortfall` / CVaR) caps.
+- **Mark-to-Market Valuation**: Supports mid-quote marks and conservative liquidation marks (longs at bid, shorts at ask) with automated stale quote detection.
+
+### 4. Binary Feed Handler & PCAP Replay
+- **MoldUDP64 & ITCH 5.0 (`python/connectivity/itch_handler.py`)**: Binary parser and encoder for MoldUDP64 session packets and Nasdaq ITCH 5.0 messages: Add Order (`'A'`), Order Executed (`'E'`), Order Cancel (`'X'`), and Order Delete (`'D'`).
+- **PCAP Packet Engine**: Synthesizes and replays standard libpcap network captures for packet burst and feed resilience testing.
+
+### 5. Hardware-in-the-Loop Risk Gate Bridge
+- **Cycle-Accurate RTL Simulator (`cpp/ito_risk/hardware_risk_bridge.hpp`)**: C++ simulation model mirroring [`rtl/risk_gate/pre_trade_gate.sv`](rtl/risk_gate/pre_trade_gate.sv) bit-for-bit, verifying 1-clock pipeline latency, overflow-safe arithmetic, and hardware reason codes.
 
 ---
 
@@ -312,10 +344,10 @@ The current validated baseline is:
 | Check | Result |
 | --- | --- |
 | Source policy | Passed with `no_source_comments` |
-| C++ and CTest | 7 of 7 tests passed |
+| C++ and CTest | 8 of 8 tests passed (including `ito_quant_native_tests`) |
 | Rust | Workspace tests passed; connectivity guard and risk service regression paths included |
 | OCaml | Policy validation and dynamic circuit-breaker stress passed |
-| Python | 25 tests passed in the latest clean validation |
+| Python | 46 tests passed (including `test_quant_microstructure`) |
 | RTL | Pre-trade, exchange bridge, rate limiter, connectivity control, and risk accelerator benches passed |
 | Recovery | Manifest and restored-file comparisons passed |
 | Release binding | All selected SHA-256 values recomputed and matched |
