@@ -65,12 +65,17 @@ struct RouteCandidate {
     bool enabled{};
     bool authorized{};
     bool lease_valid{};
+    std::uint64_t latency_ns{0};
+    bool has_speed_bump{false};
+    double historical_fill_rate{1.0};
 };
 
 struct RoutingPolicy {
     std::uint32_t max_fee_bps{100};
     std::int64_t max_price_deviation_ticks{500};
     bool allow_broker_fallback{true};
+    double latency_penalty_bps_per_us{0.0};
+    std::uint64_t speed_bump_delay_ns{350000};
 };
 
 struct RouteDecision {
@@ -79,6 +84,8 @@ struct RouteDecision {
     std::int64_t price_ticks{};
     std::uint32_t fee_bps{};
     std::uint32_t rank{};
+    std::uint64_t total_latency_ns{0};
+    double effective_cost_bps{0.0};
 };
 
 struct RoutedExecution {

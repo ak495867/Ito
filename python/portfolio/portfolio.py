@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Mapping
 
@@ -27,6 +28,51 @@ class QuoteMark:
     @property
     def mid_ticks(self) -> float:
         return (self.bid_ticks + self.ask_ticks) / 2.0
+
+
+@dataclass(frozen=True)
+class FactorModel:
+    factors: list[str]
+    loadings: dict[int, dict[str, float]]
+    covariance_matrix: dict[str, dict[str, float]]
+    specific_variance: dict[int, float] = field(default_factory=dict)
+
+    def calculate_variance(self, notionals: Mapping[int, float]) -> float:
+        factor_exposures = {f: 0.0 for f in self.factors}
+        for iid, notional in notionals.items():
+            inst_loadings = self.loadings.get(iid, {})
+            for f in self.factors:
+                factor_exposures[f] += notional * inst_loadings.get(f, 0.0)
+
+        factor_var = 0.0
+        for f1 in self.factors:
+            exp1 = factor_exposures[f1]
+            if exp1 == 0.0:
+                continue
+            row = self.covariance_matrix.get(f1, {})
+            for f2 in self.factors:
+                exp2 = factor_exposures[f2]
+                if exp2 == 0.0:
+                    continue
+                factor_var += exp1 * exp2 * row.get(f2, 0.0)
+
+        spec_var = 0.0
+        for iid, notional in notionals.items():
+            var_eps = self.specific_variance.get(iid, 0.0)
+            if var_eps > 0.0 and notional != 0.0:
+                spec_var += (notional ** 2) * var_eps
+
+        return max(0.0, factor_var + spec_var)
+
+    def parametric_var(self, notionals: Mapping[int, float], confidence: float = 0.99) -> float:
+        z = 2.3263 if confidence >= 0.99 else (1.6449 if confidence >= 0.95 else 1.2816)
+        total_var = self.calculate_variance(notionals)
+        return z * math.sqrt(total_var)
+
+    def expected_shortfall(self, notionals: Mapping[int, float], confidence: float = 0.99) -> float:
+        es_factor = 2.665 if confidence >= 0.99 else (2.063 if confidence >= 0.95 else 1.755)
+        total_var = self.calculate_variance(notionals)
+        return es_factor * math.sqrt(total_var)
 
 
 @dataclass
@@ -58,6 +104,8 @@ class PortfolioLimits:
     max_concentration_cash: float | None = None
     max_loss_cash: float | None = None
     require_locates: bool = False
+    max_expected_shortfall_cash: float | None = None
+    max_parametric_var_cash: float | None = None
 
 
 class PortfolioError(ValueError):
@@ -70,6 +118,7 @@ class Portfolio:
         limits: PortfolioLimits,
         specs: Mapping[int, InstrumentSpec] | None = None,
         locates: Mapping[int, int] | None = None,
+        factor_model: FactorModel | None = None,
     ) -> None:
         if (
             min(
@@ -85,6 +134,7 @@ class Portfolio:
         self.limits = limits
         self.specs: dict[int, InstrumentSpec] = dict(specs) if specs else {}
         self.locates: dict[int, int] = dict(locates) if locates else {}
+        self.factor_model = factor_model
         self.positions: dict[int, Position] = {}
 
     def _spec(self, instrument_id: int) -> InstrumentSpec:
@@ -117,7 +167,6 @@ class Portfolio:
         spec = self._spec(instrument_id)
 
         is_short_opening = side < 0 and (position.quantity - quantity < 0)
-        short_increase = 0
         if is_short_opening:
             if not self.limits.allow_short:
                 raise PortfolioError("short_sale_disabled")
@@ -247,26 +296,27 @@ class Portfolio:
                 if short_increase > self.locates.get(instrument_id, 0):
                     return False, "short_locate_insufficient"
 
+        projected_notionals_cash: dict[int, float] = {}
+        for iid, pos in self.positions.items():
+            pos_spec = self._spec(iid)
+            price = price_ticks if iid == instrument_id else pos.last_price_ticks
+            qty = (pos.quantity + side * quantity) if iid == instrument_id else pos.quantity
+            projected_notionals_cash[iid] = qty * price * pos_spec.tick_size * pos_spec.multiplier
+
         if self.limits.max_gross_notional_cash is not None:
-            cash_notional = sum(
-                pos.gross_quantity
-                * pos.last_price_ticks
-                * self._spec(iid).tick_size
-                * self._spec(iid).multiplier
-                for iid, pos in self.positions.items()
-            ) - (
-                current.gross_quantity
-                * current.last_price_ticks
-                * spec.tick_size
-                * spec.multiplier
-            ) + (
-                abs(current.quantity + side * quantity)
-                * price_ticks
-                * spec.tick_size
-                * spec.multiplier
-            )
-            if cash_notional > self.limits.max_gross_notional_cash:
+            cash_gross = sum(abs(v) for v in projected_notionals_cash.values())
+            if cash_gross > self.limits.max_gross_notional_cash:
                 return False, "gross_notional_cash_limit"
+
+        if self.factor_model is not None:
+            if self.limits.max_expected_shortfall_cash is not None:
+                es = self.factor_model.expected_shortfall(projected_notionals_cash)
+                if es > self.limits.max_expected_shortfall_cash:
+                    return False, "expected_shortfall_limit"
+            if self.limits.max_parametric_var_cash is not None:
+                var = self.factor_model.parametric_var(projected_notionals_cash)
+                if var > self.limits.max_parametric_var_cash:
+                    return False, "parametric_var_limit"
 
         return True, "approved"
 
@@ -293,6 +343,7 @@ class Portfolio:
         unrealized_pnl_cash = 0.0
         total_fees_paid_cash = 0.0
         stale_positions: list[int] = []
+        current_notionals_cash: dict[int, float] = {}
 
         for instrument_id, position in self.positions.items():
             spec = self._spec(instrument_id)
@@ -332,8 +383,10 @@ class Portfolio:
             concentration[str(instrument_id)] = pos_notional_ticks
 
             unit_value = spec.tick_size * spec.multiplier
+            pos_cash_notional = position.quantity * mark_val * unit_value
+            current_notionals_cash[instrument_id] = pos_cash_notional
             gross_notional_cash += position.gross_quantity * mark_val * unit_value
-            net_notional_cash += position.quantity * mark_val * unit_value
+            net_notional_cash += pos_cash_notional
             realized_pnl_cash += position.realized_pnl_cash
             unrealized_pnl_cash += pos_unrealized_ticks * unit_value
             total_fees_paid_cash += position.fees_paid_cash
@@ -342,6 +395,12 @@ class Portfolio:
         unrealized_ticks_int = int(round(unrealized_pnl))
         loss_ticks_int = -(realized_ticks_int + unrealized_ticks_int)
         top_concentration = max(concentration.values(), default=0)
+
+        factor_metrics: dict[str, float] = {}
+        if self.factor_model is not None:
+            factor_metrics["portfolio_variance"] = self.factor_model.calculate_variance(current_notionals_cash)
+            factor_metrics["parametric_var_cash"] = self.factor_model.parametric_var(current_notionals_cash)
+            factor_metrics["expected_shortfall_cash"] = self.factor_model.expected_shortfall(current_notionals_cash)
 
         pos_dict: dict[str, object] = {}
         for instrument_id, pos in self.positions.items():
@@ -352,7 +411,24 @@ class Portfolio:
                 item["realized_pnl_ticks"] = int(round(item["realized_pnl_ticks"]))
             pos_dict[str(instrument_id)] = item
 
-        return {
+        limits_breached = {
+            "net_position": abs(net_position) > self.limits.max_net_position,
+            "gross_position": gross_position > self.limits.max_gross_position,
+            "gross_notional": gross_notional > self.limits.max_gross_notional_ticks,
+            "concentration": top_concentration > self.limits.max_concentration_ticks,
+            "loss": loss_ticks_int > self.limits.max_loss_ticks,
+        }
+        if self.factor_model is not None:
+            if self.limits.max_expected_shortfall_cash is not None:
+                limits_breached["expected_shortfall"] = (
+                    factor_metrics.get("expected_shortfall_cash", 0.0) > self.limits.max_expected_shortfall_cash
+                )
+            if self.limits.max_parametric_var_cash is not None:
+                limits_breached["parametric_var"] = (
+                    factor_metrics.get("parametric_var_cash", 0.0) > self.limits.max_parametric_var_cash
+                )
+
+        res: dict[str, object] = {
             "net_position": net_position,
             "gross_position": gross_position,
             "gross_notional_ticks": gross_notional,
@@ -366,12 +442,9 @@ class Portfolio:
             "total_fees_paid_cash": total_fees_paid_cash,
             "net_pnl_cash": realized_pnl_cash + unrealized_pnl_cash - total_fees_paid_cash,
             "stale_positions": stale_positions,
-            "limits_breached": {
-                "net_position": abs(net_position) > self.limits.max_net_position,
-                "gross_position": gross_position > self.limits.max_gross_position,
-                "gross_notional": gross_notional > self.limits.max_gross_notional_ticks,
-                "concentration": top_concentration > self.limits.max_concentration_ticks,
-                "loss": loss_ticks_int > self.limits.max_loss_ticks,
-            },
+            "limits_breached": limits_breached,
             "positions": pos_dict,
         }
+        if factor_metrics:
+            res["factor_metrics"] = factor_metrics
+        return res

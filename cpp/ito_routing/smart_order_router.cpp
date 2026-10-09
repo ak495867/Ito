@@ -22,11 +22,22 @@ std::vector<RouteDecision> SmartOrderRouter::rank(const connectivity::Normalized
                 continue;
             }
         }
-        result.push_back(RouteDecision{candidate.venue_id, candidate.broker_id, candidate.executable_price_ticks, candidate.fee_bps, candidate.rank});
+        std::uint64_t total_latency = candidate.latency_ns;
+        if (candidate.has_speed_bump) {
+            total_latency += policy_.speed_bump_delay_ns;
+        }
+        const double latency_penalty = (static_cast<double>(total_latency) / 1000.0) * policy_.latency_penalty_bps_per_us;
+        const double fill_discount = candidate.historical_fill_rate > 0.0 ? (1.0 / candidate.historical_fill_rate) : 2.0;
+        const double effective_cost = (static_cast<double>(candidate.fee_bps) + latency_penalty) * fill_discount;
+
+        result.push_back(RouteDecision{candidate.venue_id, candidate.broker_id, candidate.executable_price_ticks, candidate.fee_bps, candidate.rank, total_latency, effective_cost});
     }
-    std::stable_sort(result.begin(), result.end(), [this](const RouteDecision& left, const RouteDecision& right) {
+    std::stable_sort(result.begin(), result.end(), [](const RouteDecision& left, const RouteDecision& right) {
         if (left.rank != right.rank) {
             return left.rank < right.rank;
+        }
+        if (left.effective_cost_bps != right.effective_cost_bps) {
+            return left.effective_cost_bps < right.effective_cost_bps;
         }
         if (left.fee_bps != right.fee_bps) {
             return left.fee_bps < right.fee_bps;

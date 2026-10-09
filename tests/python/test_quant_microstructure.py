@@ -1,4 +1,6 @@
 import conftest
+import os
+import tempfile
 import unittest
 
 from engine import (
@@ -11,11 +13,28 @@ from engine import (
     Signal,
 )
 from portfolio import (
+    FactorModel,
     InstrumentSpec,
     Portfolio,
     PortfolioLimits,
     PortfolioError,
     QuoteMark,
+)
+from itch_handler import (
+    ItchAddOrder,
+    ItchOrderBookTracker,
+    ItchOrderCancel,
+    ItchOrderDelete,
+    ItchOrderExecuted,
+    encode_itch_add_order,
+    encode_itch_order_cancel,
+    encode_itch_order_delete,
+    encode_itch_order_executed,
+    encode_mold_packet,
+    parse_itch_message,
+    parse_mold_packet,
+    read_pcap_payloads,
+    write_synthetic_pcap,
 )
 
 
@@ -54,6 +73,40 @@ class QuantMicrostructureTests(unittest.TestCase):
         self.assertAlmostEqual(snapshot["realized_pnl_cash"], 0.0)
         self.assertGreater(snapshot["unrealized_pnl_cash"], 0.0)
         self.assertGreater(snapshot["total_fees_paid_cash"], 0.0)
+
+    def test_factor_model_variance_and_var_limits(self):
+        factors = ["Market", "Tech"]
+        loadings = {
+            1: {"Market": 1.2, "Tech": 0.8},
+            2: {"Market": 0.7, "Tech": 0.2},
+        }
+        cov = {
+            "Market": {"Market": 0.04, "Tech": 0.02},
+            "Tech": {"Market": 0.02, "Tech": 0.06},
+        }
+        spec_var = {1: 0.01, 2: 0.01}
+        model = FactorModel(factors, loadings, cov, spec_var)
+
+        limits = PortfolioLimits(
+            max_net_position=1000,
+            max_gross_position=1000,
+            max_gross_notional_ticks=1_000_000,
+            max_concentration_ticks=1_000_000,
+            max_loss_ticks=100_000,
+            allow_short=True,
+            max_expected_shortfall_cash=5000.0,
+        )
+        spec1 = InstrumentSpec(instrument_id=1, tick_size=1.0, multiplier=1.0)
+        portfolio = Portfolio(limits, specs={1: spec1}, factor_model=model)
+
+        portfolio.apply_fill(1, 1, 50, 100)
+        snapshot = portfolio.snapshot({1: 100})
+        self.assertIn("factor_metrics", snapshot)
+        self.assertGreater(snapshot["factor_metrics"]["expected_shortfall_cash"], 0.0)
+
+        ok, reason = portfolio.validate_order(1, 1, 500, 100)
+        self.assertFalse(ok)
+        self.assertEqual(reason, "expected_shortfall_limit")
 
     def test_short_borrow_locates_and_rejection_when_unlocated(self):
         meme_spec = InstrumentSpec(
@@ -190,6 +243,53 @@ class QuantMicrostructureTests(unittest.TestCase):
         self.assertEqual(len(fills), 1)
         self.assertEqual(fills[0].price_ticks, 103)
         self.assertEqual(fills[0].timestamp_ns, 5210)
+
+    def test_binary_itch_and_moldudp64_packet_parsing(self):
+        msg_add1 = encode_itch_add_order(1, 1000000, 101, "B", 100, "AAPL", 15000)
+        msg_add2 = encode_itch_add_order(1, 1000010, 102, "S", 200, "AAPL", 15050)
+        packet_bytes = encode_mold_packet("SESSION01", 1, [msg_add1, msg_add2])
+
+        packet = parse_mold_packet(packet_bytes)
+        self.assertEqual(packet.session, "SESSION01")
+        self.assertEqual(packet.sequence_number, 1)
+        self.assertEqual(packet.count, 2)
+
+        tracker = ItchOrderBookTracker("AAPL")
+        for raw in packet.messages:
+            msg = parse_itch_message(raw)
+            tracker.process(msg)
+
+        self.assertEqual(tracker.best_bid, 15000)
+        self.assertEqual(tracker.best_ask, 15050)
+
+        msg_exec = encode_itch_order_executed(1, 1000020, 101, 40, 999)
+        tracker.process(parse_itch_message(msg_exec))
+        self.assertEqual(tracker.orders[101].shares, 60)
+        self.assertEqual(tracker.bids[15000], 60)
+
+        msg_cancel = encode_itch_order_cancel(1, 1000030, 102, 50)
+        tracker.process(parse_itch_message(msg_cancel))
+        self.assertEqual(tracker.asks[15050], 150)
+
+        msg_del = encode_itch_order_delete(1, 1000040, 101)
+        tracker.process(parse_itch_message(msg_del))
+        self.assertNotIn(101, tracker.orders)
+        self.assertNotIn(15000, tracker.bids)
+
+    def test_synthetic_pcap_write_and_read(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            pcap_path = os.path.join(temp_dir, "test_market_data.pcap")
+            msg1 = encode_itch_add_order(1, 10000, 1, "B", 50, "SPY", 45000)
+            pkt1 = encode_mold_packet("SESS1", 1, [msg1])
+            write_synthetic_pcap(pcap_path, [pkt1])
+
+            payloads = read_pcap_payloads(pcap_path)
+            self.assertEqual(len(payloads), 1)
+            parsed_pkt = parse_mold_packet(payloads[0])
+            self.assertEqual(parsed_pkt.sequence_number, 1)
+            parsed_msg = parse_itch_message(parsed_pkt.messages[0])
+            self.assertIsInstance(parsed_msg, ItchAddOrder)
+            self.assertEqual(parsed_msg.stock, "SPY")
 
 
 if __name__ == "__main__":

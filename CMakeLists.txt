@@ -99,6 +99,10 @@ add_executable(ito_socket_integration_tests tests/connectivity/test_socket_integ
 target_link_libraries(ito_socket_integration_tests PRIVATE ito_connectivity ito_common)
 add_test(NAME ito_socket_integration_tests COMMAND ito_socket_integration_tests)
 
+add_executable(ito_quant_native_tests tests/cpp/test_quant_native.cpp)
+target_link_libraries(ito_quant_native_tests PRIVATE ito_execution ito_core ito_risk ito_routing ito_session ito_connectivity ito_exchange ito_common)
+add_test(NAME ito_quant_native_tests COMMAND ito_quant_native_tests)
+
 add_custom_target(ito_generate_risk_interface ALL
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_risk_interface.py
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
